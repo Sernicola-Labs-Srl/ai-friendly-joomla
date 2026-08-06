@@ -1,0 +1,9 @@
+/vendor/
+/build/
+/dist/
+/.phpunit.cache/
+/.claude/
+/.agents/
+/.vscode/
+/.idea/
+*.zip

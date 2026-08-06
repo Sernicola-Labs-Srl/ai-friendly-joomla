@@ -1,0 +1,9 @@
+{
+  "$schema": "https://developer.joomla.org/schemas/json-schema/web_assets.json",
+  "name": "com_aifriendly",
+  "version": "2.0.3",
+  "assets": [
+    {"name": "com_aifriendly.hub", "type": "style", "uri": "com_aifriendly/hub.css"},
+    {"name": "com_aifriendly.hub", "type": "script", "uri": "com_aifriendly/hub.js", "dependencies": ["core"], "attributes": {"defer": true}}
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "sernicola/ai-friendly-joomla",
+  "description": "AI Friendly package for Joomla 5.4 and 6.1",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.1"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5 || ^11.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Sernicola\\Library\\AiFriendly\\": "src/library/src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Sernicola\\Library\\AiFriendly\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit"
+  }
+}
+

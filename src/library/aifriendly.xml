@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="library" method="upgrade">
+    <name>LIB_AIFRIENDLY</name>
+    <libraryname>aifriendly</libraryname>
+    <version>2.0.3</version>
+    <creationDate>2026-08</creationDate>
+    <author>Sernicola Labs</author>
+    <license>GNU General Public License version 2 or later</license>
+    <description>LIB_AIFRIENDLY_DESCRIPTION</description>
+    <namespace path="src">Sernicola\Library\AiFriendly</namespace>
+    <files>
+        <folder>src</folder>
+        <filename>forseo-bridge.php</filename>
+    </files>
+</extension>

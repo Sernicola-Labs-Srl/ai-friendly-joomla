@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="package" method="upgrade">
+    <name>PKG_AIFRIENDLY</name>
+    <packagename>aifriendly</packagename>
+    <version>2.0.3</version>
+    <creationDate>2026-08</creationDate>
+    <author>Sernicola Labs</author>
+    <authorEmail>info@sernicolalabs.com</authorEmail>
+    <authorUrl>https://sernicola-labs.com</authorUrl>
+    <copyright>Copyright (C) 2026 Sernicola Labs</copyright>
+    <license>GNU General Public License version 2 or later</license>
+    <description>PKG_AIFRIENDLY_DESCRIPTION</description>
+    <scriptfile>script.php</scriptfile>
+    <files>
+        <file type="library" id="aifriendly">lib_aifriendly.zip</file>
+        <file type="component" id="com_aifriendly">com_aifriendly.zip</file>
+        <file type="plugin" id="aifriendly" group="system">plg_system_aifriendly.zip</file>
+        <file type="plugin" id="aifriendly" group="content">plg_content_aifriendly.zip</file>
+        <file type="plugin" id="aifriendly" group="task">plg_task_aifriendly.zip</file>
+    </files>
+</extension>

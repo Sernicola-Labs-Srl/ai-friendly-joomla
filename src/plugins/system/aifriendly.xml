@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade">
+    <name>PLG_SYSTEM_AIFRIENDLY</name>
+    <version>2.0.3</version>
+    <creationDate>2026-08</creationDate>
+    <author>Sernicola Labs</author>
+    <license>GNU General Public License version 2 or later</license>
+    <description>PLG_SYSTEM_AIFRIENDLY_DESCRIPTION</description>
+    <namespace path="src">Sernicola\Plugin\System\AiFriendly</namespace>
+    <files>
+        <folder plugin="aifriendly">services</folder>
+        <folder>src</folder>
+        <folder>language</folder>
+    </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/plg_system_aifriendly.ini</language>
+        <language tag="en-GB">language/en-GB/plg_system_aifriendly.sys.ini</language>
+        <language tag="it-IT">language/it-IT/plg_system_aifriendly.ini</language>
+        <language tag="it-IT">language/it-IT/plg_system_aifriendly.sys.ini</language>
+    </languages>
+    <config>
+        <fields name="params">
+            <fieldset name="legacy"
+                      label="PLG_SYSTEM_AIFRIENDLY_LEGACY_SETTINGS"
+                      description="PLG_SYSTEM_AIFRIENDLY_LEGACY_DESC">
+                <field name="hubnote" type="note" class="alert alert-info"
+                       label="PLG_SYSTEM_AIFRIENDLY_USE_HUB"
+                       description="PLG_SYSTEM_AIFRIENDLY_USE_HUB_DESC" />
+                <field name="llms_content" type="textarea" filter="raw" rows="10"
+                       label="PLG_SYSTEM_AIFRIENDLY_LLMS_CONTENT"
+                       description="PLG_SYSTEM_AIFRIENDLY_LLMS_CONTENT_DESC" />
+                <field name="llms_include_auto" type="radio" default="1"
+                       layout="joomla.form.field.radio.switcher"
+                       label="PLG_SYSTEM_AIFRIENDLY_INCLUDE_AUTO">
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field name="include_articles" type="radio" default="1"
+                       layout="joomla.form.field.radio.switcher"
+                       label="PLG_SYSTEM_AIFRIENDLY_INCLUDE_ARTICLES">
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field name="articles_limit" type="number" default="100" min="1" max="1000" step="1"
+                       label="PLG_SYSTEM_AIFRIENDLY_ARTICLES_LIMIT"
+                       description="PLG_SYSTEM_AIFRIENDLY_ARTICLES_LIMIT_DESC" />
+                <field name="exclude_categories" type="category" extension="com_content" multiple="true"
+                       label="PLG_SYSTEM_AIFRIENDLY_EXCLUDE_CATEGORIES"
+                       description="PLG_SYSTEM_AIFRIENDLY_EXCLUDE_CATEGORIES_DESC" />
+                <field name="include_metadata" type="radio" default="1"
+                       layout="joomla.form.field.radio.switcher"
+                       label="PLG_SYSTEM_AIFRIENDLY_INCLUDE_METADATA">
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field name="normalize_headings" type="radio" default="1"
+                       layout="joomla.form.field.radio.switcher"
+                       label="PLG_SYSTEM_AIFRIENDLY_NORMALIZE_HEADINGS"
+                       description="PLG_SYSTEM_AIFRIENDLY_NORMALIZE_HEADINGS_DESC">
+                    <option value="0">JNO</option>
+                    <option value="1">JYES</option>
+                </field>
+                <field name="cache_time" type="number" default="3600" min="0" step="60"
+                       label="PLG_SYSTEM_AIFRIENDLY_CACHE_TIME"
+                       description="PLG_SYSTEM_AIFRIENDLY_CACHE_TIME_DESC" />
+            </fieldset>
+        </fields>
+    </config>
+</extension>

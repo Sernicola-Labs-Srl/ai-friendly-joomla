@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="component" method="upgrade">
+    <name>COM_AIFRIENDLY</name>
+    <element>com_aifriendly</element>
+    <version>2.0.3</version>
+    <creationDate>2026-08</creationDate>
+    <author>Sernicola Labs</author>
+    <license>GNU General Public License version 2 or later</license>
+    <description>COM_AIFRIENDLY_DESCRIPTION</description>
+    <namespace path="src">Sernicola\Component\AiFriendly</namespace>
+    <administration>
+        <menu img="class:dashboard">COM_AIFRIENDLY_MENU</menu>
+        <files folder="administrator">
+            <folder>services</folder>
+            <folder>src</folder>
+            <folder>tmpl</folder>
+            <folder>language</folder>
+            <folder>sql</folder>
+            <filename>access.xml</filename>
+        </files>
+        <languages folder="administrator/language">
+            <language tag="en-GB">en-GB/com_aifriendly.ini</language>
+            <language tag="en-GB">en-GB/com_aifriendly.sys.ini</language>
+            <language tag="it-IT">it-IT/com_aifriendly.ini</language>
+            <language tag="it-IT">it-IT/com_aifriendly.sys.ini</language>
+        </languages>
+    </administration>
+    <media destination="com_aifriendly" folder="media">
+        <folder>css</folder>
+        <folder>js</folder>
+        <folder>images</folder>
+        <filename>joomla.asset.json</filename>
+    </media>
+    <install>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/install.mysql.utf8.sql</file>
+        </sql>
+    </install>
+    <uninstall>
+        <sql>
+            <file driver="mysql" charset="utf8">sql/uninstall.mysql.utf8.sql</file>
+        </sql>
+    </uninstall>
+    <update>
+        <schemas>
+            <schemapath type="mysql">sql/updates/mysql</schemapath>
+        </schemas>
+    </update>
+</extension>
