@@ -11,6 +11,7 @@ use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Event\EventInterface;
 use Joomla\Event\SubscriberInterface;
+use Sernicola\Library\AiFriendly\Integration\CoreSchema;
 use Sernicola\Library\AiFriendly\Markdown\Generator;
 use Sernicola\Library\AiFriendly\Provider\JoomlaContentProvider;
 use Sernicola\Library\AiFriendly\Schema\OutputMode;
@@ -27,7 +28,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.0.3';
+    private const VERSION = '2.1.0';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;
@@ -41,7 +42,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             'onBeforeCompileHead' => 'onBeforeCompileHead',
             'onContentAfterSave' => 'onContentAfterSave',
             'onContentChangeState' => 'onContentChangeState',
-            'onSchemaPrepareData' => 'onSchemaPrepareData',
+            'onSchemaBeforeCompileHead' => 'onSchemaBeforeCompileHead',
         ];
     }
 
@@ -138,21 +139,20 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
         }
     }
 
-    public function onSchemaPrepareData(EventInterface $event): void
+    /**
+     * Joomla Schema.org publishes its graph from this event, on every page.
+     * The handler lays the AI Friendly identity over the nodes Joomla built.
+     */
+    public function onSchemaBeforeCompileHead(EventInterface $event): void
     {
-        $options = Options::get();
-        if (empty($options['schema_enabled']) || OutputMode::resolve($options) !== OutputMode::CORE) return;
-        $builder = new SchemaBuilder($options);
-        $additions = $builder->graph($this->currentItem());
-        $args = $event->getArguments();
-        $data = $args['data'] ?? ($args[0] ?? null);
-        if (is_array($data)) {
-            $graph = isset($data['@graph']) && is_array($data['@graph']) ? $data['@graph'] : (array_is_list($data) ? $data : [$data]);
-            $merged = $builder->merge($graph, $additions);
-            if (isset($data['@graph'])) $data['@graph'] = $merged; else $data = $merged;
-            if (method_exists($event, 'setArgument')) $event->setArgument('data', $data);
-        } elseif (is_object($data) && method_exists($data, 'getGraph') && method_exists($data, 'setGraph')) {
-            $data->setGraph($builder->merge((array) $data->getGraph(), $additions));
+        try {
+            $schema = $event->getArgument('subject');
+            if (!is_object($schema) || !method_exists($schema, 'get') || !method_exists($schema, 'set')) return;
+            $graph = $schema->get('@graph');
+            if (!is_array($graph) || !$graph) return;
+            $schema->set('@graph', CoreSchema::graph($graph));
+        } catch (\Throwable) {
+            // A fault on our side must never take the structured data down.
         }
     }
 

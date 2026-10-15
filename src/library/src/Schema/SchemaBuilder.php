@@ -42,6 +42,10 @@ final class SchemaBuilder
         if ($identityType === 'Person') {
             $identity['jobTitle'] = $this->options['schema_job_title'] ?? '';
         } else {
+            $extraTypes = $this->lines('schema_extra_types');
+            if ($extraTypes) {
+                $identity['@type'] = array_values(array_unique(array_merge($extraTypes, [$identityType])));
+            }
             $identity = array_merge($identity, [
                 'additionalType' => $this->options['schema_additional_type'] ?? '',
                 'slogan' => $this->options['schema_slogan'] ?? '',
@@ -56,6 +60,11 @@ final class SchemaBuilder
                 'address' => $this->address(),
                 'contactPoint' => $this->contact(),
                 'founder' => $this->founders(),
+                'telephone' => trim((string) ($this->options['schema_telephone'] ?? '')),
+                'priceRange' => trim((string) ($this->options['schema_price_range'] ?? '')),
+                'openingHoursSpecification' => $this->openingHours(),
+                'geo' => $this->geo(),
+                'hasMap' => trim((string) ($this->options['schema_has_map'] ?? '')),
             ]);
         }
         $creatorType = in_array($this->options['schema_creator_type'] ?? '', ['Person', 'Organization'], true) ? $this->options['schema_creator_type'] : 'Organization';
@@ -65,10 +74,14 @@ final class SchemaBuilder
             'name' => Factory::getApplication()->getConfig()->get('sitename'),
             'publisher' => ['@id' => $identityId],
             'creator' => $creatorName !== '' ? ['@type' => $creatorType, 'name' => $creatorName, 'url' => $this->options['schema_creator_url'] ?? ''] : null,
+            'potentialAction' => $this->searchAction(),
         ];
         $graph = [$website, $identity];
         if ($catalog = $this->offerCatalog($identityId, $home)) {
             $graph[] = $catalog;
+            if ($identityType !== 'Person') {
+                $graph[1]['hasOfferCatalog'] = ['@id' => $catalog['@id']];
+            }
         }
         if (($profileUrl = trim((string) ($this->options['schema_profile_page_url'] ?? ''))) !== '') {
             $graph[] = ['@type' => 'ProfilePage', '@id' => $profileUrl . '#profile', 'url' => $profileUrl, 'mainEntity' => ['@id' => $identityId]];
@@ -168,6 +181,61 @@ final class SchemaBuilder
             if ($name !== '') $founders[] = array_filter(['@type' => 'Person', 'name' => $name, 'jobTitle' => $role]);
         }
         return $founders;
+    }
+
+    /**
+     * One line per group of days: "Mo-Th 10:30-22:00", "Fr 10:30-21:00", "Sa 10:00-16:00".
+     * Days not listed are not published, which reads as closed.
+     */
+    private function openingHours(): array
+    {
+        $order = ['mo' => 'Monday', 'tu' => 'Tuesday', 'we' => 'Wednesday', 'th' => 'Thursday', 'fr' => 'Friday', 'sa' => 'Saturday', 'su' => 'Sunday'];
+        $keys = array_keys($order);
+        $specs = [];
+        foreach ($this->lines('schema_opening_hours') as $line) {
+            if (!preg_match('/^([A-Za-z]{2})(?:\s*-\s*([A-Za-z]{2}))?\s+(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/', $line, $m)) {
+                continue;
+            }
+            $from = array_search(strtolower($m[1]), $keys, true);
+            $to = $m[2] !== '' ? array_search(strtolower($m[2]), $keys, true) : $from;
+            if ($from === false || $to === false || $to < $from) {
+                continue;
+            }
+            $days = [];
+            for ($i = $from; $i <= $to; $i++) {
+                $days[] = $order[$keys[$i]];
+            }
+            $specs[] = [
+                '@type' => 'OpeningHoursSpecification',
+                'dayOfWeek' => count($days) === 1 ? $days[0] : $days,
+                'opens' => sprintf('%02d:%s', (int) explode(':', $m[3])[0], explode(':', $m[3])[1]),
+                'closes' => sprintf('%02d:%s', (int) explode(':', $m[4])[0], explode(':', $m[4])[1]),
+            ];
+        }
+
+        return $specs;
+    }
+
+    private function geo(): ?array
+    {
+        $lat = trim((string) ($this->options['schema_geo_latitude'] ?? ''));
+        $lng = trim((string) ($this->options['schema_geo_longitude'] ?? ''));
+        if (!is_numeric($lat) || !is_numeric($lng)) {
+            return null;
+        }
+
+        return ['@type' => 'GeoCoordinates', 'latitude' => (float) $lat, 'longitude' => (float) $lng];
+    }
+
+    /** The template must contain {search_term_string}, otherwise it is not a search target. */
+    private function searchAction(): ?array
+    {
+        $target = trim((string) ($this->options['schema_search_url'] ?? ''));
+        if ($target === '' || !str_contains($target, '{search_term_string}')) {
+            return null;
+        }
+
+        return ['@type' => 'SearchAction', 'target' => $target, 'query-input' => 'required name=search_term_string'];
     }
 
     private function offerCatalog(string $identityId, string $home): ?array

@@ -99,6 +99,8 @@ $schemaGroups = [
         ['key' => 'schema_additional_type', 'label' => 'COM_AIFRIENDLY_SCHEMA_ADDITIONAL_TYPE'],
         ['key' => 'schema_slogan', 'label' => 'COM_AIFRIENDLY_SCHEMA_SLOGAN'],
         ['key' => 'schema_founding_date', 'label' => 'COM_AIFRIENDLY_SCHEMA_FOUNDING_DATE', 'hint' => 'COM_AIFRIENDLY_SCHEMA_FOUNDING_DATE_HINT', 'attrs' => ' placeholder="2019-04-23"'],
+        ['key' => 'schema_extra_types', 'label' => 'COM_AIFRIENDLY_SCHEMA_EXTRA_TYPES', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_SCHEMA_EXTRA_TYPES_HINT'],
+        ['key' => 'schema_search_url', 'label' => 'COM_AIFRIENDLY_SCHEMA_SEARCH_URL', 'type' => 'url', 'hint' => 'COM_AIFRIENDLY_SCHEMA_SEARCH_URL_HINT'],
     ],
     'COM_AIFRIENDLY_SCHEMA_GROUP_LEGAL' => [
         ['key' => 'schema_legal_name', 'label' => 'COM_AIFRIENDLY_SCHEMA_LEGAL_NAME'],
@@ -129,6 +131,12 @@ $schemaGroups = [
         ['key' => 'schema_address_locality', 'label' => 'COM_AIFRIENDLY_SCHEMA_ADDRESS_LOCALITY'],
         ['key' => 'schema_address_region', 'label' => 'COM_AIFRIENDLY_SCHEMA_ADDRESS_REGION'],
         ['key' => 'schema_address_country', 'label' => 'COM_AIFRIENDLY_SCHEMA_ADDRESS_COUNTRY'],
+        ['key' => 'schema_telephone', 'label' => 'COM_AIFRIENDLY_SCHEMA_TELEPHONE'],
+        ['key' => 'schema_price_range', 'label' => 'COM_AIFRIENDLY_SCHEMA_PRICE_RANGE'],
+        ['key' => 'schema_geo_latitude', 'label' => 'COM_AIFRIENDLY_SCHEMA_GEO_LATITUDE'],
+        ['key' => 'schema_geo_longitude', 'label' => 'COM_AIFRIENDLY_SCHEMA_GEO_LONGITUDE'],
+        ['key' => 'schema_has_map', 'label' => 'COM_AIFRIENDLY_SCHEMA_HAS_MAP', 'type' => 'url'],
+        ['key' => 'schema_opening_hours', 'label' => 'COM_AIFRIENDLY_SCHEMA_OPENING_HOURS', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_SCHEMA_OPENING_HOURS_HINT'],
     ],
     'COM_AIFRIENDLY_SCHEMA_GROUP_CONTACT' => [
         ['key' => 'schema_contact_type', 'label' => 'COM_AIFRIENDLY_SCHEMA_CONTACT_TYPE'],

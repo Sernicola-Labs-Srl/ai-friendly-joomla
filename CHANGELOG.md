@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0
+
+- Corretta la modalità **Joomla core** dello Schema: il plugin ascoltava `onSchemaPrepareData`, un evento dei form di amministrazione che non pubblica nulla nel grafo. Ora usa `onSchemaBeforeCompileHead`, con cui Joomla pubblica il JSON-LD su ogni pagina.
+- L'identità viene sovrapposta ai nodi che Joomla già pubblica (`Organization/base`, `WebSite/base`) invece di aggiungerne un secondo set: un'unica organizzazione per sito, con lo stesso `@id` su ogni pagina, e tutti i riferimenti del grafo restano validi. Se Joomla non pubblica l'organizzazione di base, il grafo non viene toccato.
+- Nuovi campi dell'entità: tipi schema.org aggiuntivi (ad esempio `EducationalOrganization` e `LocalBusiness`), telefono, fascia di prezzo, orari di apertura (una riga per gruppo di giorni, `Mo-Th 10:30-22:00`), coordinate, URL della mappa, URL di ricerca del sito (pubblica la `SearchAction`).
+- Il catalogo dei servizi è ora collegato all'organizzazione con `hasOfferCatalog`.
+- Nuovi test per l'unione dei grafi.
+
 ## 2.0.3
 
 - Risolti gli endpoint Markdown degli articoli, che rispondevano 404 su qualunque pagina raggiunta dal menu. Il segmento di un URL SEF è l'alias della voce di menu, non quello del contenuto, quindi cercarlo fra gli alias degli articoli non poteva funzionare.
