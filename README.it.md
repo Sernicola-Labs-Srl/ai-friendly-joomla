@@ -2,6 +2,8 @@
 
 AI Friendly espone i contenuti Joomla ai sistemi AI/LLM tramite `/llms.txt`, endpoint Markdown e JSON-LD semantico opzionale.
 
+Disponibile anche per WordPress: [Sernicola Labs AI Friendly](https://github.com/Sernicola-Labs-Srl/ai-friendly) ([wordpress.org](https://wordpress.org/plugins/sernicola-labs-ai-friendly/)).
+
 ## Requisiti
 
 - Joomla 5.4 con PHP 8.1+ oppure Joomla 6.1 con PHP 8.3+

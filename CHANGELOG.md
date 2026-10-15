@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.1
+
+- Il catalogo dei servizi non porta più la proprietà `provider`, che schema.org non prevede su `OfferCatalog` e che il validatore segnalava. Il collegamento con l'organizzazione resta: `hasOfferCatalog` sull'organizzazione e `provider` su ciascun `Service`, dove la proprietà è prevista.
+
 ## 2.3.0
 
 - **Pagine di elenco.** Il plugin Schema.org di Joomla pubblica un grafo solo per gli articoli: le viste di elenco di com_content (categoria, categorie, archivio, in evidenza) restavano senza. Con la modalità Joomla core, queste pagine ricevono ora lo stesso grafo degli articoli (organizzazione e sito con gli stessi `@id`) più un `CollectionPage` con l'elenco di ciò che la pagina mostra (`ItemList`, fino a 50 voci: gli articoli della categoria e delle sue sottocategorie, escludendo quelli non pubblici o in noindex).

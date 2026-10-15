@@ -247,9 +247,9 @@ final class SchemaBuilder
         $offers = [];
         foreach ((array) $services as $service) {
             if (!is_array($service) || trim((string) ($service['name'] ?? '')) === '') continue;
-            $offers[] = ['@type' => 'Offer', 'itemOffered' => array_filter(['@type' => 'Service', 'name' => trim((string) $service['name']), 'description' => trim((string) ($service['description'] ?? '')), 'url' => trim((string) ($service['url'] ?? ''))])];
+            $offers[] = ['@type' => 'Offer', 'itemOffered' => array_filter(['@type' => 'Service', 'name' => trim((string) $service['name']), 'description' => trim((string) ($service['description'] ?? '')), 'url' => trim((string) ($service['url'] ?? '')), 'provider' => ['@id' => $identityId]])];
         }
-        return $offers ? ['@type' => 'OfferCatalog', '@id' => $home . '#services', 'name' => Lang::text('PLG_SYSTEM_AIFRIENDLY_SCHEMA_SERVICES', 'Services'), 'provider' => ['@id' => $identityId], 'itemListElement' => $offers] : null;
+        return $offers ? ['@type' => 'OfferCatalog', '@id' => $home . '#services', 'name' => Lang::text('PLG_SYSTEM_AIFRIENDLY_SCHEMA_SERVICES', 'Services'), 'itemListElement' => $offers] : null;
     }
 
     private function clean($value)

@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate and build the package
+        shell: powershell
+        run: ./tools/validate-package.ps1
+
+      - name: Check that the tag matches the package version
+        shell: powershell
+        run: |
+          $version = ([xml](Get-Content pkg_aifriendly.xml -Raw)).extension.version
+          if ("v$version" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match package version $version" }
+
+      - name: Publish the release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag.TrimStart('v')
+          $zip = "dist/pkg_aifriendly-$version.zip"
+          Copy-Item dist/pkg_aifriendly.zip $zip
+          $log = Get-Content CHANGELOG.md -Raw
+          $match = [regex]::Match($log, "(?ms)^## $([regex]::Escape($version))\s*\r?\n(.*?)(?=^## |\z)")
+          $notes = if ($match.Success) { $match.Groups[1].Value.Trim() } else { "Release $version" }
+          Set-Content -Path release-notes.md -Value $notes -Encoding utf8
+          gh release create $tag $zip --title "AI Friendly for Joomla $version" --notes-file release-notes.md
