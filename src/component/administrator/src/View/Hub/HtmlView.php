@@ -22,7 +22,7 @@ use Sernicola\Library\AiFriendly\Support\Options;
 
 final class HtmlView extends BaseHtmlView
 {
-    public const VERSION = '2.4.0';
+    public const VERSION = '2.4.1';
 
     public array $options = [];
     public array $overview = [];

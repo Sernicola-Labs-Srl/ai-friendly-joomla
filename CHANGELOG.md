@@ -2,6 +2,10 @@
 
 An Italian version of this file is kept in `CHANGELOG.it.md`.
 
+## 2.4.1
+
+- The package is now named "AI Friendly" in the Extensions manager, matching the name of its Joomla Extensions Directory listing, the component and the plugins. Nothing else changes.
+
 ## 2.4.0
 
 - **Update server.** The package now declares an update server, so Joomla can offer new releases from System → Update → Extensions. The first release that carries it has to be installed by hand; later ones arrive through Joomla.
