@@ -42,6 +42,8 @@ final class SchemaBuilder
         if ($identityType === 'Person') {
             $identity['jobTitle'] = $this->options['schema_job_title'] ?? '';
         } else {
+            // The creator URL names whoever built the site, not the organization.
+            $identity['url'] = $home;
             $extraTypes = $this->lines('schema_extra_types');
             if ($extraTypes) {
                 $identity['@type'] = array_values(array_unique(array_merge($extraTypes, [$identityType])));

@@ -69,7 +69,19 @@ final class ForSeo
     {
         $options = Options::get();
 
-        if (empty($options['schema_enabled']) || OutputMode::resolve($options) !== OutputMode::FORSEO) {
+        if (empty($options['schema_enabled'])) {
+            return $data;
+        }
+
+        $mode = OutputMode::resolve($options);
+
+        // In core mode the identity travels with the Joomla graph, so what 4SEO
+        // publishes for the same entities would only repeat it.
+        if ($mode === OutputMode::CORE) {
+            return self::withoutSiteEntities($data);
+        }
+
+        if ($mode !== OutputMode::FORSEO) {
             return $data;
         }
 
@@ -102,6 +114,50 @@ final class ForSeo
                 $data[$rule] = $enriched;
 
                 return $data;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Removes the site-level entities from a map of rule name to document,
+     * dropping documents that end up empty. Page-level documents such as the
+     * breadcrumb are returned untouched.
+     *
+     * @param mixed $data
+     * @return mixed
+     */
+    public static function withoutSiteEntities($data)
+    {
+        if (!is_array($data) || !$data || self::isDocument($data)) {
+            return $data;
+        }
+
+        $site = ['WebSite', 'Organization', 'LocalBusiness', 'EducationalOrganization', 'PostalAddress', 'GeoCoordinates', 'ImageObject'];
+
+        foreach ($data as $rule => $document) {
+            if (!is_array($document) || !self::isDocument($document)) {
+                continue;
+            }
+
+            $nodes = isset($document['@graph']) && is_array($document['@graph']) ? $document['@graph'] : [$document];
+            $kept = array_values(array_filter($nodes, static function ($node) use ($site): bool {
+                $types = is_array($node) ? (array) ($node['@type'] ?? []) : [];
+
+                return !$types || !array_intersect($types, $site);
+            }));
+
+            if (count($kept) === count($nodes)) {
+                continue;
+            }
+
+            if (!$kept) {
+                unset($data[$rule]);
+            } elseif (isset($document['@graph'])) {
+                $data[$rule]['@graph'] = $kept;
+            } else {
+                $data[$rule] = $kept[0];
             }
         }
 

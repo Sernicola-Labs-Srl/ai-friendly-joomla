@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.1
+
+- Corretto l'`url` dell'organizzazione: usava l'URL del creatore del sito (campo "Credits") al posto della home. Con la modalità Joomla core, che sovrappone l'identità ai nodi di Joomla, il valore sbagliato finiva nel grafo.
+- In modalità Joomla core il bridge 4SEO toglie dai documenti di 4SEO le entità di sito (`WebSite`, `Organization`, `LocalBusiness`, indirizzo, coordinate, logo), già pubblicate nel grafo di Joomla; breadcrumb e nodi di pagina restano.
+
 ## 2.1.0
 
 - Corretta la modalità **Joomla core** dello Schema: il plugin ascoltava `onSchemaPrepareData`, un evento dei form di amministrazione che non pubblica nulla nel grafo. Ora usa `onSchemaBeforeCompileHead`, con cui Joomla pubblica il JSON-LD su ogni pagina.
