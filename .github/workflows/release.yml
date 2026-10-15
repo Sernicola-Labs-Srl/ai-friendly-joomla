@@ -33,8 +33,9 @@ jobs:
           $version = $tag.TrimStart('v')
           $zip = "dist/pkg_aifriendly-$version.zip"
           Copy-Item dist/pkg_aifriendly.zip $zip
-          $log = Get-Content CHANGELOG.md -Raw
+          $utf8 = New-Object System.Text.UTF8Encoding($false)
+          $log = [System.IO.File]::ReadAllText((Resolve-Path CHANGELOG.md), $utf8)
           $match = [regex]::Match($log, "(?ms)^## $([regex]::Escape($version))\s*\r?\n(.*?)(?=^## |\z)")
           $notes = if ($match.Success) { $match.Groups[1].Value.Trim() } else { "Release $version" }
-          Set-Content -Path release-notes.md -Value $notes -Encoding utf8
+          [System.IO.File]::WriteAllText((Join-Path (Get-Location) "release-notes.md"), $notes, $utf8)
           gh release create $tag $zip --title "AI Friendly for Joomla $version" --notes-file release-notes.md
