@@ -15,4 +15,8 @@
         <folder>src</folder>
         <filename>forseo-bridge.php</filename>
     </files>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/lib_aifriendly.sys.ini</language>
+        <language tag="it-IT">it-IT/lib_aifriendly.sys.ini</language>
+    </languages>
 </extension>
