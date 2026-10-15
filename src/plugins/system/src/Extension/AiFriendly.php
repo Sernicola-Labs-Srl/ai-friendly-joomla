@@ -15,6 +15,7 @@ use Joomla\Event\SubscriberInterface;
 use Sernicola\Library\AiFriendly\Integration\CoreSchema;
 use Sernicola\Library\AiFriendly\Markdown\Generator;
 use Sernicola\Library\AiFriendly\Provider\JoomlaContentProvider;
+use Sernicola\Library\AiFriendly\Schema\ListingSchema;
 use Sernicola\Library\AiFriendly\Schema\OutputMode;
 use Sernicola\Library\AiFriendly\Schema\SchemaBuilder;
 use Sernicola\Library\AiFriendly\Service\Factory as AiFactory;
@@ -29,7 +30,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.2.1';
+    private const VERSION = '2.3.0';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;
@@ -135,6 +136,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             $document->addHeadLink(Path::markdownUrl($item->canonicalUrl), 'alternate', 'rel', ['type' => 'text/markdown', 'title' => 'Markdown']);
         }
         if (empty($options['schema_enabled'])) return;
+        $this->printListingSchema($document);
         // In 4SEO mode the graph is injected by the bridge, so nothing is printed here.
         if (OutputMode::resolve($options) === OutputMode::STANDALONE) {
             $json = (new SchemaBuilder($options))->jsonLd($item);
@@ -359,6 +361,75 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             'X-AI-Friendly-Version' => self::VERSION,
             'X-AI-Friendly-Reason' => $reason,
         ]);
+    }
+
+    /**
+     * Joomla Schema.org publishes a graph for articles only. The listing views
+     * of com_content (category, categories, archive, featured) get theirs here.
+     */
+    private function printListingSchema(HtmlDocument $document): void
+    {
+        $app = $this->getApplication();
+        $input = $app->getInput();
+        $view = $input->getCmd('view');
+        if ($input->getCmd('option') !== 'com_content' || !in_array($view, ['category', 'categories', 'archive', 'featured'], true)) return;
+        try {
+            $items = [];
+            if ($view === 'category' && ($categoryId = $input->getInt('id')) > 0) {
+                $ids = $this->categoryBranch($categoryId);
+                foreach ((new JoomlaContentProvider())->list(['category_ids' => $ids, 'language' => $app->getLanguage()->getTag()], ListingSchema::LIMIT) as $item) {
+                    if (!$item->accessible || !$item->published || !empty($item->metadata['noindex'])) continue;
+                    $items[] = ['url' => $item->canonicalUrl, 'name' => $item->title];
+                }
+            }
+            $graph = CoreSchema::listing([
+                'url' => $this->listingUrl(),
+                'title' => (string) $document->getTitle(),
+                'description' => (string) $document->getDescription(),
+                'language' => $app->getLanguage()->getTag(),
+                'site' => (string) $app->get('sitename'),
+            ], array_map(static fn (array $row): array => ['url' => html_entity_decode($row['url'], ENT_QUOTES | ENT_HTML5, 'UTF-8'), 'name' => $row['name']], $items));
+            if ($graph) {
+                $document->addCustomTag('<script type="application/ld+json">' . json_encode(['@context' => 'https://schema.org', '@graph' => $graph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . '</script>');
+            }
+        } catch (\Throwable) {
+            // A fault on our side must never break the page.
+        }
+    }
+
+    /**
+     * The address of the listing without pagination or tracking parameters. On
+     * a site without friendly URLs the parameters that identify the page stay,
+     * otherwise every listing would share one address.
+     */
+    private function listingUrl(): string
+    {
+        $uri = Uri::getInstance();
+        $url = $uri->toString(['scheme', 'host', 'port', 'path']);
+        $query = $uri->getQuery(true);
+        if (isset($query['option'])) {
+            $keep = array_intersect_key($query, array_flip(['option', 'view', 'layout', 'id', 'catid', 'Itemid']));
+            $url .= '?' . http_build_query($keep);
+        }
+        return $url;
+    }
+
+    /**
+     * A category and everything below it.
+     *
+     * @return array<int, int>
+     */
+    private function categoryBranch(int $categoryId): array
+    {
+        $db = Factory::getContainer()->get('DatabaseDriver');
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('c.id'))
+            ->from($db->quoteName('#__categories', 'c'))
+            ->join('INNER', $db->quoteName('#__categories', 'p') . ' ON c.lft >= p.lft AND c.rgt <= p.rgt AND c.extension = p.extension')
+            ->where($db->quoteName('p.id') . ' = :id')
+            ->where($db->quoteName('c.published') . ' = 1')
+            ->bind(':id', $categoryId, \Joomla\Database\ParameterType::INTEGER);
+        return array_map('intval', $db->setQuery($query)->loadColumn() ?: [$categoryId]);
     }
 
     private ?\Sernicola\Library\AiFriendly\Dto\ContentItem $current = null;

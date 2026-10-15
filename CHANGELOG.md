@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0
+
+- **Pagine di elenco.** Il plugin Schema.org di Joomla pubblica un grafo solo per gli articoli: le viste di elenco di com_content (categoria, categorie, archivio, in evidenza) restavano senza. Con la modalità Joomla core, queste pagine ricevono ora lo stesso grafo degli articoli (organizzazione e sito con gli stessi `@id`) più un `CollectionPage` con l'elenco di ciò che la pagina mostra (`ItemList`, fino a 50 voci: gli articoli della categoria e delle sue sottocategorie, escludendo quelli non pubblici o in noindex).
+- Il provider dei contenuti Joomla accetta il filtro `category_ids`.
+
 ## 2.2.1
 
 - Gli identificatori e gli URL delle entità di pagina (Course, Person, Event, DefinedTerm) usano l'indirizzo della pagina visitata, senza query string né frammento. Prima derivavano dalla rotta interna dell'articolo e uscivano con parametri come `?lang=*`.

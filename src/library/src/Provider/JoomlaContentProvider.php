@@ -44,6 +44,9 @@ final class JoomlaContentProvider implements ContentProviderInterface
         if (!empty($filters['category_id'])) {
             $query->where($this->db->quoteName('a.catid') . ' = ' . (int) $filters['category_id']);
         }
+        if (!empty($filters['category_ids']) && is_array($filters['category_ids'])) {
+            $query->where($this->db->quoteName('a.catid') . ' IN (' . implode(',', array_map('intval', $filters['category_ids'])) . ')');
+        }
         $query->order($this->db->quoteName('a.publish_up') . ' DESC, ' . $this->db->quoteName('a.id') . ' DESC');
         $rows = $this->db->setQuery($query, max(0, $offset), max(1, $limit))->loadObjectList() ?: [];
 

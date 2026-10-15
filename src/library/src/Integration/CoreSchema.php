@@ -6,6 +6,7 @@ defined('_JEXEC') or die;
 
 use Joomla\CMS\Uri\Uri;
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
+use Sernicola\Library\AiFriendly\Schema\ListingSchema;
 use Sernicola\Library\AiFriendly\Schema\OutputMode;
 use Sernicola\Library\AiFriendly\Schema\PageSchema;
 use Sernicola\Library\AiFriendly\Schema\SchemaBuilder;
@@ -50,6 +51,26 @@ final class CoreSchema
         $rule = PageSchema::match(PageSchema::rules((string) $options['schema_page_rules']), (int) $item->id, $categoryIds());
 
         return $rule === null ? $graph : PageSchema::apply($graph, $item, $rule, $home, $raw);
+    }
+
+    /**
+     * The graph of a listing page, or null when the integration is inactive.
+     *
+     * @param array{url:string, title:string, description:string, language:string, site:string} $page
+     * @param array<int, array{url:string, name:string}> $items
+     * @return array<int, mixed>|null
+     */
+    public static function listing(array $page, array $items): ?array
+    {
+        $options = Options::get();
+
+        if (empty($options['schema_enabled']) || OutputMode::resolve($options) !== OutputMode::CORE) {
+            return null;
+        }
+
+        $home = rtrim(Uri::root(), '/') . '/';
+
+        return ListingSchema::graph((new SchemaBuilder($options))->graph(), $home, $page, $items);
     }
 
     /**
