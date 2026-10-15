@@ -45,7 +45,7 @@ final class Options
             'schema_profile_page_url' => '',
             'schema_extra_types' => '', 'schema_telephone' => '', 'schema_price_range' => '',
             'schema_opening_hours' => '', 'schema_geo_latitude' => '', 'schema_geo_longitude' => '',
-            'schema_has_map' => '', 'schema_search_url' => '',
+            'schema_has_map' => '', 'schema_search_url' => '', 'schema_page_rules' => '',
         ];
     }
 

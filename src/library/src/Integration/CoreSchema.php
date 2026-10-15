@@ -5,7 +5,9 @@ namespace Sernicola\Library\AiFriendly\Integration;
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Uri\Uri;
+use Sernicola\Library\AiFriendly\Dto\ContentItem;
 use Sernicola\Library\AiFriendly\Schema\OutputMode;
+use Sernicola\Library\AiFriendly\Schema\PageSchema;
 use Sernicola\Library\AiFriendly\Schema\SchemaBuilder;
 use Sernicola\Library\AiFriendly\Support\Options;
 
@@ -24,8 +26,13 @@ final class CoreSchema
     private const ORGANIZATION_SUFFIX = '#/schema/Organization/base';
     private const WEBSITE_SUFFIX = '#/schema/WebSite/base';
 
-    /** Event handler entry point: returns the graph unchanged when inactive. */
-    public static function graph(array $graph): array
+    /**
+     * Event handler entry point: returns the graph unchanged when inactive.
+     *
+     * @param callable():array<int, int>|null $categoryIds Category of the page followed by its ancestors.
+     * @param callable():array{introtext:string, fulltext:string}|null $raw Stored article text.
+     */
+    public static function graph(array $graph, ?ContentItem $item = null, ?callable $categoryIds = null, ?callable $raw = null): array
     {
         $options = Options::get();
 
@@ -34,8 +41,15 @@ final class CoreSchema
         }
 
         $home = rtrim(Uri::root(), '/') . '/';
+        $graph = self::merge($graph, (new SchemaBuilder($options))->graph(), $home);
 
-        return self::merge($graph, (new SchemaBuilder($options))->graph(), $home);
+        if ($item === null || $categoryIds === null || $raw === null || trim((string) ($options['schema_page_rules'] ?? '')) === '') {
+            return $graph;
+        }
+
+        $rule = PageSchema::match(PageSchema::rules((string) $options['schema_page_rules']), (int) $item->id, $categoryIds());
+
+        return $rule === null ? $graph : PageSchema::apply($graph, $item, $rule, $home, $raw);
     }
 
     /**

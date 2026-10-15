@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.0
+
+- **Tipi di pagina.** Nuova opzione Schema "Tipi di pagina": una regola per riga (`article:43=FAQPage`, `category:24=Course`, `category:23=Person|Insegnante`) dice che cosa è davvero una pagina. Joomla pubblica ogni articolo come `Article` generico; con le regole il nodo della pagina diventa `FAQPage`, `ProfilePage`, `AboutPage`, `ContactPage` o `WebPage`, e gli viene associata l'entità giusta. Una regola su una categoria vale anche per le sottocategorie; le regole su un articolo hanno la precedenza. Funziona con la modalità Schema.org di Joomla.
+- **FAQPage.** Domande e risposte vengono lette dal layout del builder YOOtheme (voci degli accordion, anche nascoste o ripetute vengono scartate) e, per le pagine scritte senza builder, dal markup di accordion e `<details>`. Le risposte mantengono paragrafi, elenchi, enfasi e link, con i link resi assoluti; script, attributi e tag estranei vengono tolti.
+- **Course, Person, Event, DefinedTerm.** Ogni tipo diventa un'entità collegata alla pagina (`mainEntity`) e all'organizzazione (`provider`, `worksFor`, `organizer`). I termini del glossario condividono un unico `DefinedTermSet`.
+- **Event senza date inventate.** La data viene letta dal testo ("Sabato 11 aprile 2026 ore 18:15", "Da giovedì 2 luglio a domenica 5 luglio"); l'anno può venire dal titolo della categoria ("Iniziative 2026"). Senza una data leggibile l'evento non viene pubblicato e la pagina resta una `WebPage`.
+- Date di pubblicazione e modifica, immagine, editore e autore sui nodi delle pagine.
+- Il plugin legge l'articolo corrente una volta per richiesta invece di due.
+
 ## 2.1.1
 
 - Corretto l'`url` dell'organizzazione: usava l'URL del creatore del sito (campo "Credits") al posto della home. Con la modalità Joomla core, che sovrappone l'identità ai nodi di Joomla, il valore sbagliato finiva nel grafo.

@@ -10,6 +10,7 @@ use Joomla\CMS\Plugin\CMSPlugin;
 use Joomla\CMS\Router\Route;
 use Joomla\CMS\Uri\Uri;
 use Joomla\Event\EventInterface;
+use Joomla\Event\Priority;
 use Joomla\Event\SubscriberInterface;
 use Sernicola\Library\AiFriendly\Integration\CoreSchema;
 use Sernicola\Library\AiFriendly\Markdown\Generator;
@@ -28,7 +29,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.1.1';
+    private const VERSION = '2.2.0';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;
@@ -42,7 +43,9 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             'onBeforeCompileHead' => 'onBeforeCompileHead',
             'onContentAfterSave' => 'onContentAfterSave',
             'onContentChangeState' => 'onContentChangeState',
-            'onSchemaBeforeCompileHead' => 'onSchemaBeforeCompileHead',
+            // Last of all: the Schema.org plugins of the article, event and so on add their
+            // nodes in listeners of their own, and the page types need those nodes to exist.
+            'onSchemaBeforeCompileHead' => ['onSchemaBeforeCompileHead', Priority::MIN],
         ];
     }
 
@@ -150,7 +153,13 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             if (!is_object($schema) || !method_exists($schema, 'get') || !method_exists($schema, 'set')) return;
             $graph = $schema->get('@graph');
             if (!is_array($graph) || !$graph) return;
-            $schema->set('@graph', CoreSchema::graph($graph));
+            $item = $this->currentItem();
+            $schema->set('@graph', CoreSchema::graph(
+                $graph,
+                $item,
+                fn (): array => $this->categoryChain($item),
+                fn (): array => $this->storedText($item)
+            ));
         } catch (\Throwable) {
             // A fault on our side must never take the structured data down.
         }
@@ -352,11 +361,52 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
         ]);
     }
 
+    private ?\Sernicola\Library\AiFriendly\Dto\ContentItem $current = null;
+    private bool $currentResolved = false;
+
     private function currentItem(): ?\Sernicola\Library\AiFriendly\Dto\ContentItem
     {
+        // Read twice per request (head links, schema): resolve it once.
+        if ($this->currentResolved) return $this->current;
+        $this->currentResolved = true;
         $input = $this->getApplication()->getInput();
         if ($input->getCmd('option') !== 'com_content' || $input->getCmd('view') !== 'article') return null;
-        return (new JoomlaContentProvider())->find((string) $input->getInt('id'), $this->getApplication()->getLanguage()->getTag());
+        return $this->current = (new JoomlaContentProvider())->find((string) $input->getInt('id'), $this->getApplication()->getLanguage()->getTag());
+    }
+
+    /**
+     * The article's category followed by its ancestors, so a rule on a parent
+     * category reaches every page below it.
+     *
+     * @return array<int, int>
+     */
+    private function categoryChain(\Sernicola\Library\AiFriendly\Dto\ContentItem $item): array
+    {
+        $catId = (int) ($item->taxonomies['category_ids'][0] ?? 0);
+        if ($catId === 0) return [];
+        $db = Factory::getContainer()->get('DatabaseDriver');
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('p.id'))
+            ->from($db->quoteName('#__categories', 'c'))
+            ->join('INNER', $db->quoteName('#__categories', 'p') . ' ON p.lft <= c.lft AND p.rgt >= c.rgt AND p.extension = c.extension')
+            ->where($db->quoteName('c.id') . ' = :id')
+            ->order($db->quoteName('p.lft') . ' DESC')
+            ->bind(':id', $catId, \Joomla\Database\ParameterType::INTEGER);
+        return array_map('intval', $db->setQuery($query)->loadColumn() ?: [$catId]);
+    }
+
+    /** @return array{introtext:string, fulltext:string} */
+    private function storedText(\Sernicola\Library\AiFriendly\Dto\ContentItem $item): array
+    {
+        $db = Factory::getContainer()->get('DatabaseDriver');
+        $id = (int) $item->id;
+        $query = $db->getQuery(true)
+            ->select([$db->quoteName('introtext'), $db->quoteName('fulltext')])
+            ->from($db->quoteName('#__content'))
+            ->where($db->quoteName('id') . ' = :id')
+            ->bind(':id', $id, \Joomla\Database\ParameterType::INTEGER);
+        $row = $db->setQuery($query)->loadObject();
+        return ['introtext' => (string) ($row->introtext ?? ''), 'fulltext' => (string) ($row->fulltext ?? '')];
     }
 
     /**

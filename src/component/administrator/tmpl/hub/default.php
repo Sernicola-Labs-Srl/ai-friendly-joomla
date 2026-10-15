@@ -124,6 +124,7 @@ $schemaGroups = [
         ['key' => 'schema_area_served', 'label' => 'COM_AIFRIENDLY_SCHEMA_AREA_SERVED', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_ONE_PER_LINE'],
         ['key' => 'schema_founders', 'label' => 'COM_AIFRIENDLY_SCHEMA_FOUNDERS', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_SCHEMA_FOUNDERS_HINT'],
         ['key' => 'schema_services', 'label' => 'COM_AIFRIENDLY_SCHEMA_SERVICES', 'type' => 'textarea', 'rows' => 6, 'hint' => 'COM_AIFRIENDLY_SCHEMA_SERVICES_HINT'],
+        ['key' => 'schema_page_rules', 'label' => 'COM_AIFRIENDLY_SCHEMA_PAGE_RULES', 'type' => 'textarea', 'rows' => 8, 'hint' => 'COM_AIFRIENDLY_SCHEMA_PAGE_RULES_HINT'],
     ],
     'COM_AIFRIENDLY_SCHEMA_GROUP_ADDRESS' => [
         ['key' => 'schema_street_address', 'label' => 'COM_AIFRIENDLY_SCHEMA_STREET_ADDRESS'],
