@@ -9,6 +9,10 @@ An Italian version of this file is kept in `CHANGELOG.it.md`.
 - All sub-extension manifests carry the author contact and copyright, like the package manifest.
 - The error raised when a static Markdown file cannot be saved is now in English, like the rest of the code.
 - The package validation script also checks `update.xml` against the declared version and download URL.
+- Fixed the title of the first-time setup panel in the Hub, which took the dark heading colour of Joomla's admin theme and was almost unreadable on the blue background.
+- Language files for the package and the library, so both show a proper name in the Extensions manager instead of a raw language key.
+- The Markdown converter, the HTML text helper and the static store no longer use hexadecimal escapes, which security scanners flag; behaviour is unchanged.
+- Files inside the package are always built with LF line endings.
 - The changelog is now in English; the Italian original lives in `CHANGELOG.it.md`.
 
 ## 2.3.1
