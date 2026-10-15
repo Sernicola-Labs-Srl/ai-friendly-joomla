@@ -59,7 +59,7 @@ final class StaticVersionStore
         // former CMS class and did not survive the move to the framework package.
         $content = file_get_contents($real);
 
-        return is_string($content) && trim($content, "\xEF\xBB\xBF\x00..\x20") !== '' ? $content : null;
+        return is_string($content) && trim($content, "\u{FEFF}\0.. ") !== '' ? $content : null;
     }
 
     public function clear(): int

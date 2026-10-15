@@ -24,7 +24,7 @@ final class HtmlText
     public static function plain(string $html): string
     {
         $text = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $text = str_replace("\xC2\xA0", ' ', $text);
+        $text = str_replace("\u{A0}", ' ', $text);
 
         return trim((string) preg_replace('/\s+/u', ' ', $text));
     }
@@ -61,7 +61,7 @@ final class HtmlText
         }
 
         $out = (string) preg_replace('/>\s+</u', '><', $out);
-        $out = str_replace("\xC2\xA0", ' ', $out);
+        $out = str_replace("\u{A0}", ' ', $out);
 
         return trim((string) preg_replace('/[ \t\r\n]+/u', ' ', $out));
     }
