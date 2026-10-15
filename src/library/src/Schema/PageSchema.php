@@ -87,12 +87,19 @@ final class PageSchema
     {
         $pageKey = null;
         $orgId = null;
+        $url = null;
 
         foreach ($graph as $key => $node) {
             $id = is_array($node) ? (string) ($node['@id'] ?? '') : '';
 
             if ($id !== '' && str_ends_with($id, '#/schema/Organization/base')) {
                 $orgId = $id;
+            }
+
+            // The address the visitor is on is the one to publish: Joomla's own
+            // route for the article carries parameters such as lang=*.
+            if ($id !== '' && str_ends_with($id, '#/schema/WebPage/base') && !empty($node['url'])) {
+                $url = self::plainUrl((string) $node['url']);
             }
 
             if ($id !== '' && str_ends_with($id, '/schema/com_content/article/' . (int) $item->id)) {
@@ -106,6 +113,7 @@ final class PageSchema
             return $graph;
         }
 
+        $url = $url ?? self::plainUrl(self::url($item));
         $type = $rule['type'];
         $page = $graph[$pageKey];
         $page = self::describe($page, $item, $orgId, $type);
@@ -136,21 +144,21 @@ final class PageSchema
 
             case 'Course':
                 $page['@type'] = 'WebPage';
-                $node = self::course($item, $orgId);
+                $node = self::course($item, $orgId, $url);
                 $page['mainEntity'] = ['@id' => $node['@id']];
                 $extra[] = $node;
                 break;
 
             case 'Person':
                 $page['@type'] = 'ProfilePage';
-                $node = self::person($item, $orgId, $rule['params'][0] ?? '');
+                $node = self::person($item, $orgId, $rule['params'][0] ?? '', $url);
                 $page['mainEntity'] = ['@id' => $node['@id']];
                 $extra[] = $node;
                 break;
 
             case 'Event':
                 $page['@type'] = 'WebPage';
-                $node = self::event($item, $orgId, $graph);
+                $node = self::event($item, $orgId, $graph, $url);
                 if ($node) {
                     $page['mainEntity'] = ['@id' => $node['@id']];
                     $extra[] = $node;
@@ -168,10 +176,10 @@ final class PageSchema
                 ];
                 $node = [
                     '@type' => 'DefinedTerm',
-                    '@id' => self::url($item) . '#term',
+                    '@id' => $url . '#term',
                     'name' => $item->title,
                     'description' => self::description($item),
-                    'url' => self::url($item),
+                    'url' => $url,
                     'inDefinedTermSet' => ['@id' => $set['@id']],
                 ];
                 $page['mainEntity'] = ['@id' => $node['@id']];
@@ -246,6 +254,15 @@ final class PageSchema
         return $page;
     }
 
+    /** The URL without query string or fragment, entities decoded. */
+    private static function plainUrl(string $url): string
+    {
+        $url = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $cut = strcspn($url, '?#');
+
+        return substr($url, 0, $cut);
+    }
+
     /** Joomla hands the route over HTML-escaped ("&amp;"); JSON-LD needs the plain URL. */
     private static function url(ContentItem $item): string
     {
@@ -259,28 +276,28 @@ final class PageSchema
         return $text !== '' ? $text : HtmlText::plain($item->excerpt);
     }
 
-    private static function course(ContentItem $item, string $orgId): array
+    private static function course(ContentItem $item, string $orgId, string $url): array
     {
         return [
             '@type' => 'Course',
-            '@id' => self::url($item) . '#course',
+            '@id' => $url . '#course',
             'name' => $item->title,
             'description' => self::description($item),
-            'url' => self::url($item),
+            'url' => $url,
             'provider' => ['@id' => $orgId],
             'inLanguage' => ($item->language ?? '*') !== '*' ? $item->language : null,
             'image' => $item->metadata['featured_image'] ?? null,
         ];
     }
 
-    private static function person(ContentItem $item, string $orgId, string $jobTitle): array
+    private static function person(ContentItem $item, string $orgId, string $jobTitle, string $url): array
     {
         return [
             '@type' => 'Person',
-            '@id' => self::url($item) . '#person',
+            '@id' => $url . '#person',
             'name' => HtmlText::plain($item->title),
             'description' => self::description($item),
-            'url' => self::url($item),
+            'url' => $url,
             'jobTitle' => $jobTitle,
             'image' => $item->metadata['featured_image'] ?? null,
             'worksFor' => ['@id' => $orgId],
@@ -290,7 +307,7 @@ final class PageSchema
     /**
      * @param array<int, mixed> $graph
      */
-    private static function event(ContentItem $item, string $orgId, array $graph): ?array
+    private static function event(ContentItem $item, string $orgId, array $graph, string $url): ?array
     {
         $plain = HtmlText::plain($item->body);
         $category = (string) ($item->metadata['category'] ?? '');
@@ -315,10 +332,10 @@ final class PageSchema
 
         return [
             '@type' => 'Event',
-            '@id' => self::url($item) . '#event',
+            '@id' => $url . '#event',
             'name' => $item->title,
             'description' => self::description($item),
-            'url' => self::url($item),
+            'url' => $url,
             'startDate' => $dates['start'],
             'endDate' => $dates['end'],
             'eventStatus' => 'https://schema.org/EventScheduled',

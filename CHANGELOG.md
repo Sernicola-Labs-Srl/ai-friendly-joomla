@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.1
+
+- Gli identificatori e gli URL delle entità di pagina (Course, Person, Event, DefinedTerm) usano l'indirizzo della pagina visitata, senza query string né frammento. Prima derivavano dalla rotta interna dell'articolo e uscivano con parametri come `?lang=*`.
+
 ## 2.2.0
 
 - **Tipi di pagina.** Nuova opzione Schema "Tipi di pagina": una regola per riga (`article:43=FAQPage`, `category:24=Course`, `category:23=Person|Insegnante`) dice che cosa è davvero una pagina. Joomla pubblica ogni articolo come `Article` generico; con le regole il nodo della pagina diventa `FAQPage`, `ProfilePage`, `AboutPage`, `ContactPage` o `WebPage`, e gli viene associata l'entità giusta. Una regola su una categoria vale anche per le sottocategorie; le regole su un articolo hanno la precedenza. Funziona con la modalità Schema.org di Joomla.
