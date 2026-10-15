@@ -1238,3 +1238,13 @@
         flex: 1;
     }
 }
+
+.aif-disclosure {
+    margin: 8px 0 0;
+}
+
+.aif-disclosure summary {
+    cursor: pointer;
+    padding: 6px 0;
+    color: var(--aif-accent);
+}

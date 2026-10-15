@@ -9,6 +9,7 @@ An Italian version of this file is kept in `CHANGELOG.it.md`.
 - All sub-extension manifests carry the author contact and copyright, like the package manifest.
 - The error raised when a static Markdown file cannot be saved is now in English, like the rest of the code.
 - The package validation script also checks `update.xml` against the declared version and download URL.
+- **Optional 4SEO bridge, now with a button.** Instead of asking you to edit a 4SEO file by hand, the Schema section has an **Enable the 4SEO bridge** button, after a confirmation. Installing AI Friendly changes nothing in 4SEO and only shows a notice when 4SEO is detected. The bridge adds one fenced block to `libraries/weeblr/forseo_functions.php`, guarded so that 4SEO keeps working if the bridge file is ever missing. A **Remove** button and uninstalling AI Friendly take exactly those lines out again, and a file AI Friendly created is deleted once empty. Manual instructions remain available for files that cannot be edited.
 - Fixed the title of the first-time setup panel in the Hub, which took the dark heading colour of Joomla's admin theme and was almost unreadable on the blue background.
 - Language files for the package and the library, so both show a proper name in the Extensions manager instead of a raw language key.
 - The Markdown converter, the HTML text helper and the static store no longer use hexadecimal escapes, which security scanners flag; behaviour is unchanged.

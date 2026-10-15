@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.0
+
+- **Bridge 4SEO facoltativo, ora con un pulsante.** Invece di chiedere di modificare a mano un file di 4SEO, la sezione Schema ha il pulsante **Attiva il bridge 4SEO**, dopo una conferma. L'installazione di AI Friendly non cambia nulla in 4SEO e mostra solo un avviso se 4SEO è presente. Il bridge aggiunge un blocco delimitato a `libraries/weeblr/forseo_functions.php`, protetto in modo che 4SEO continui a funzionare anche se il file del bridge manca. Il pulsante **Rimuovi** e la disinstallazione di AI Friendly tolgono esattamente quelle righe, e un file creato da AI Friendly viene cancellato quando resta vuoto. Le istruzioni manuali restano disponibili per i file non modificabili.
+- Dichiarato un update server, versione minima di PHP nel manifest e rifiuto delle versioni di Joomla non supportate.
+- Corretto il titolo del pannello di configurazione iniziale dell'Hub, quasi illeggibile su fondo blu.
+- File di lingua per pacchetto e libreria: nomi leggibili in Gestione estensioni.
+- File del pacchetto sempre con fine riga LF.
+
 ## 2.3.1
 
 - Il catalogo dei servizi non porta più la proprietà `provider`, che schema.org non prevede su `OfferCatalog` e che il validatore segnalava. Il collegamento con l'organizzazione resta: `hasOfferCatalog` sull'organizzazione e `provider` su ciascun `Service`, dove la proprietà è prevista.

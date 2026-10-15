@@ -15,6 +15,7 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\MVC\Controller\BaseController;
 use Joomla\CMS\Response\JsonResponse;
 use Joomla\CMS\Session\Session;
+use Sernicola\Library\AiFriendly\Integration\ForSeo;
 use Sernicola\Library\AiFriendly\Markdown\Converter;
 use Sernicola\Library\AiFriendly\Service\Diagnostics;
 use Sernicola\Library\AiFriendly\Service\Factory as AiFactory;
@@ -138,6 +139,25 @@ final class ApiController extends BaseController
         $count = AiFactory::staticStore()->clear();
         AiFactory::repository()->addEvent('static_versions_clear', ['count' => $count]);
         $this->respond(['deleted' => $count]);
+    }
+
+    /**
+     * Adds or removes the optional 4SEO bridge. It edits a file that belongs to 4SEO,
+     * so it only runs from an explicit click in the Hub and is reverted on uninstall.
+     */
+    public function forseoBridge(): void
+    {
+        $this->guard();
+        $enable = (bool) Factory::getApplication()->getInput()->getBool('enable');
+        $result = $enable ? ForSeo::enableBridge() : ForSeo::disableBridge();
+
+        if (!$result['ok']) {
+            $key = ['missing' => 'MISSING', 'not_writable' => 'NOT_WRITABLE', 'format' => 'FORMAT'][$result['code']] ?? 'WRITE';
+            throw new \RuntimeException(Text::sprintf('COM_AIFRIENDLY_ERR_FORSEO_' . $key, ForSeo::functionsFile()));
+        }
+
+        AiFactory::repository()->addEvent('forseo_bridge', ['enabled' => $enable]);
+        $this->respond(['registered' => ForSeo::bridgeRegistered(), 'code' => $result['code']]);
     }
 
     public function events(): void

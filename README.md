@@ -35,13 +35,19 @@ The `Content - AI Friendly` plugin adds the exclusion switch and the last genera
 
 In **Extend 4SEO** mode the identity configured in the Schema section is merged into the entity 4SEO already publishes, rather than adding a competing one.
 
-4SEO hooks are not Joomla events: they are registered from its functions file. Add this line to `libraries/weeblr/forseo_functions.php`, creating it with the 4SEO preamble if it does not exist:
+The bridge is **optional**: no other feature needs it, and installing AI Friendly changes nothing in 4SEO. When 4SEO is detected, the installer only shows a notice.
+
+4SEO hooks are not Joomla events: they are registered from its functions file, `libraries/weeblr/forseo_functions.php`, which belongs to 4SEO. In **Components → AI Friendly → Schema** the **Enable the 4SEO bridge** button, after a confirmation, adds a fenced block to the end of that file (creating the file if it does not exist):
 
 ```php
-include JPATH_LIBRARIES . '/aifriendly/forseo-bridge.php';
+// BEGIN AI Friendly bridge: added from Components > AI Friendly > Schema.
+if (is_file(JPATH_LIBRARIES . '/aifriendly/forseo-bridge.php')) {
+    include JPATH_LIBRARIES . '/aifriendly/forseo-bridge.php';
+}
+// END AI Friendly bridge
 ```
 
-The Schema section shows the exact path, a copyable snippet, and whether the bridge is registered.
+The **Remove the 4SEO bridge** button takes the block out again, and so does uninstalling AI Friendly: only the lines AI Friendly added are removed (together with the single `include` line that earlier versions asked users to paste), and the file is deleted only if AI Friendly created it and nothing else is left in it. A file that ends with a closing PHP tag, or that cannot be written, is left alone and the Hub shows the lines to add by hand. A 4SEO update may overwrite the file; the Hub then shows the bridge as not registered and the button adds it back.
 
 ## Extension points
 
