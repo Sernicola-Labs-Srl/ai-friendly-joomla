@@ -35,13 +35,19 @@ Il plugin `Contenuto - AI Friendly` aggiunge all'editor degli articoli l'esclusi
 
 In modalità **Estendi 4SEO** l'identità configurata nella sezione Schema viene fusa nell'entità che 4SEO già pubblica, invece di aggiungerne una concorrente.
 
-Gli hook di 4SEO non sono eventi Joomla: si registrano dal suo functions file. Aggiungere questa riga a `libraries/weeblr/forseo_functions.php`, creandolo con il preambolo di 4SEO se non esiste:
+Il bridge è **facoltativo**: nessun'altra funzione ne ha bisogno e l'installazione di AI Friendly non cambia nulla in 4SEO. Se 4SEO è presente, l'installer mostra solo un avviso.
+
+Gli hook di 4SEO non sono eventi Joomla: si registrano dal suo functions file, `libraries/weeblr/forseo_functions.php`, che appartiene a 4SEO. In **Componenti → AI Friendly → Schema** il pulsante **Attiva il bridge 4SEO**, dopo una conferma, aggiunge un blocco delimitato in fondo a quel file (creandolo se non esiste):
 
 ```php
-include JPATH_LIBRARIES . '/aifriendly/forseo-bridge.php';
+// BEGIN AI Friendly bridge: added from Components > AI Friendly > Schema.
+if (is_file(JPATH_LIBRARIES . '/aifriendly/forseo-bridge.php')) {
+    include JPATH_LIBRARIES . '/aifriendly/forseo-bridge.php';
+}
+// END AI Friendly bridge
 ```
 
-La sezione Schema mostra il percorso esatto, lo snippet copiabile e se il bridge risulta registrato.
+Il pulsante **Rimuovi il bridge 4SEO** toglie di nuovo il blocco, e lo stesso fa la disinstallazione di AI Friendly: vengono tolte solo le righe aggiunte da AI Friendly (e la singola riga `include` che le versioni precedenti chiedevano di incollare), e il file viene cancellato solo se l'ha creato AI Friendly e non contiene altro. Un file che termina con un tag PHP di chiusura, o che non è scrivibile, non viene toccato e l'Hub mostra le righe da aggiungere a mano. Un aggiornamento di 4SEO può sovrascrivere il file: l'Hub mostra allora il bridge come non registrato e il pulsante lo riaggiunge.
 
 ## Punti di estensione
 
@@ -78,4 +84,16 @@ public function collect(EventInterface $event): void
 
 ## Distribuzione
 
-Le release sono ZIP da installare manualmente. Non è configurato un update server remoto.
+Le release sono pubblicate come pacchetti ZIP su [GitHub Releases](https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/releases). Il pacchetto dichiara un update server (`update.xml` sul branch `main`): Joomla propone le nuove versioni da **Sistema → Aggiorna → Estensioni**. La prima release che lo include va installata a mano.
+
+## Privacy e servizi esterni
+
+AI Friendly non effettua richieste di rete in uscita e non invia dati a terzi. Tutto ciò che produce nasce dal tuo sito e viene servito dal tuo dominio. L'unico link esterno è il logo Sernicola Labs nel piè di pagina dell'amministrazione.
+
+## Supporto
+
+Bug e richieste vanno aperti sull'[issue tracker](https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/issues).
+
+## Licenza
+
+GNU General Public License versione 2 o successiva. Vedi `LICENSE`.

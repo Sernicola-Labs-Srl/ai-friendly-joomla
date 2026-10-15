@@ -57,6 +57,8 @@ Copy-Item -LiteralPath (Join-Path $projectRoot "script.php") -Destination $packa
 Copy-Item -LiteralPath (Join-Path $projectRoot "README.md") -Destination $packageStage
 Copy-Item -LiteralPath (Join-Path $projectRoot "README.it.md") -Destination $packageStage
 Copy-Item -LiteralPath (Join-Path $projectRoot "CHANGELOG.md") -Destination $packageStage
+Copy-Item -LiteralPath (Join-Path $projectRoot "CHANGELOG.it.md") -Destination $packageStage
+Copy-Item -LiteralPath (Join-Path $projectRoot "language") -Destination $packageStage -Recurse
 Get-ChildItem -LiteralPath $buildRoot -Filter "*.zip" | Copy-Item -Destination $packageStage
 
 $packagePath = Join-Path $distRoot "pkg_aifriendly.zip"

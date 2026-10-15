@@ -156,6 +156,8 @@
 .aif-wizard h2 {
     margin: 0 0 8px;
     font-size: 24px;
+    /* Joomla's admin theme colours headings dark; on the accent ground the title must follow the wizard. */
+    color: inherit;
 }
 
 .aif-wizard p {
@@ -1235,4 +1237,14 @@
         min-width: 0;
         flex: 1;
     }
+}
+
+.aif-disclosure {
+    margin: 8px 0 0;
+}
+
+.aif-disclosure summary {
+    cursor: pointer;
+    padding: 6px 0;
+    color: var(--aif-accent);
 }

@@ -451,6 +451,16 @@
     }));
   }
 
+  // Adds or removes the optional 4SEO bridge: a file of 4SEO is edited, so only on an explicit click.
+  function forseoBridge(button, enable) {
+    if (enable && !window.confirm(T('COM_AIFRIENDLY_FORSEO_CONFIRM', 'Add the AI Friendly bridge to the 4SEO functions file?'))) return Promise.resolve();
+    return run(button, request('forseoBridge', { enable: enable ? 1 : 0 }).then(function () {
+      notice(T(enable ? 'COM_AIFRIENDLY_FORSEO_ENABLED' : 'COM_AIFRIENDLY_FORSEO_DISABLED', enable ? 'Bridge enabled.' : 'Bridge removed.'), {
+        action: { label: T('COM_AIFRIENDLY_RELOAD', 'Reload the page'), run: function () { window.location.reload(); } }
+      });
+    }));
+  }
+
   /* ------------------------------------------------------------- actions */
 
   var actions = {
@@ -477,7 +487,9 @@
         return refreshOverview();
       }));
     },
-    clear: clearVersions
+    clear: clearVersions,
+    'forseo-enable': function (button) { return forseoBridge(button, true); },
+    'forseo-disable': function (button) { return forseoBridge(button, false); }
   };
 
   hub.querySelectorAll('[data-action]').forEach(function (button) {

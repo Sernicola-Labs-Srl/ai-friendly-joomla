@@ -2,7 +2,7 @@
 <extension type="package" method="upgrade">
     <name>PKG_AIFRIENDLY</name>
     <packagename>aifriendly</packagename>
-    <version>2.3.1</version>
+    <version>2.4.0</version>
     <creationDate>2026-08</creationDate>
     <author>Sernicola Labs</author>
     <authorEmail>info@sernicolalabs.com</authorEmail>
@@ -11,6 +11,7 @@
     <license>GNU General Public License version 2 or later</license>
     <description>PKG_AIFRIENDLY_DESCRIPTION</description>
     <scriptfile>script.php</scriptfile>
+    <php_minimum>8.1</php_minimum>
     <files>
         <file type="library" id="aifriendly">lib_aifriendly.zip</file>
         <file type="component" id="com_aifriendly">com_aifriendly.zip</file>
@@ -18,4 +19,11 @@
         <file type="plugin" id="aifriendly" group="content">plg_content_aifriendly.zip</file>
         <file type="plugin" id="aifriendly" group="task">plg_task_aifriendly.zip</file>
     </files>
+    <languages folder="language">
+        <language tag="en-GB">en-GB/pkg_aifriendly.sys.ini</language>
+        <language tag="it-IT">it-IT/pkg_aifriendly.sys.ini</language>
+    </languages>
+    <updateservers>
+        <server type="extension" priority="1" name="AI Friendly for Joomla">https://raw.githubusercontent.com/Sernicola-Labs-Srl/ai-friendly-joomla/main/update.xml</server>
+    </updateservers>
 </extension>

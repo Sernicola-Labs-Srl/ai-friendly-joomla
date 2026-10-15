@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
 namespace Sernicola\Library\AiFriendly\Integration;
 
 defined('_JEXEC') or die;
@@ -43,9 +49,22 @@ final class ForSeo
         return JPATH_LIBRARIES . '/weeblr/forseo_functions.php';
     }
 
+    /** Markers that fence the lines we add, so that they can be found and removed again. */
+    public const BLOCK_BEGIN = '// BEGIN AI Friendly bridge';
+    public const BLOCK_END = '// END AI Friendly bridge';
+
+    /** Marks a functions file that AI Friendly created itself, so that it can delete it again. */
+    public const CREATED_MARK = '// File created by AI Friendly';
+
+    /**
+     * The lines that register the bridge. The is_file() guard keeps 4SEO working
+     * if the bridge file is ever missing, for instance after a manual cleanup.
+     */
     public static function snippet(): string
     {
-        return "include JPATH_LIBRARIES . '/" . self::BRIDGE_FILE . "';";
+        return "if (is_file(JPATH_LIBRARIES . '/" . self::BRIDGE_FILE . "')) {\n"
+            . "    include JPATH_LIBRARIES . '/" . self::BRIDGE_FILE . "';\n"
+            . '}';
     }
 
     public static function bridgeRegistered(): bool
@@ -57,6 +76,132 @@ final class ForSeo
         }
 
         return str_contains((string) file_get_contents($file), self::BRIDGE_FILE);
+    }
+
+    /**
+     * Returns the functions file with the bridge added, or null when the file is
+     * in a shape we do not dare to edit (a closing PHP tag at the end).
+     */
+    public static function addBridge(string $content): ?string
+    {
+        if (str_contains($content, self::BRIDGE_FILE)) {
+            return $content;
+        }
+
+        if (trim($content) === '') {
+            $content = "<?php\n\n" . self::CREATED_MARK . "; it is removed together with AI Friendly.\ndefined('_JEXEC') or die;\n";
+        } elseif (str_ends_with(rtrim($content), '?>')) {
+            return null;
+        }
+
+        return $content . "\n" . self::BLOCK_BEGIN . ": added from Components > AI Friendly > Schema.\n"
+            . self::snippet() . "\n" . self::BLOCK_END . "\n";
+    }
+
+    /**
+     * Returns the functions file without anything AI Friendly added, including
+     * the single include line that earlier versions asked users to paste.
+     */
+    public static function removeBridge(string $content): string
+    {
+        $content = (string) preg_replace(
+            '#\R?' . preg_quote(self::BLOCK_BEGIN, '#') . '.*?' . preg_quote(self::BLOCK_END, '#') . '\R?#s',
+            '',
+            $content
+        );
+
+        return (string) preg_replace(
+            '#^[ \t]*include[ \t]+JPATH_LIBRARIES[ \t]*\.[ \t]*[\'"]/' . preg_quote(self::BRIDGE_FILE, '#') . '[\'"][ \t]*;[ \t]*\R?#m',
+            '',
+            $content
+        );
+    }
+
+    /** True when nothing is left in a file that we created and then emptied. */
+    public static function isOnlyOurs(string $original, string $cleaned): bool
+    {
+        if (!str_contains($original, self::CREATED_MARK)) {
+            return false;
+        }
+
+        $code = (string) preg_replace('#//[^\n]*|/\*.*?\*/#s', '', $cleaned);
+        $code = (string) preg_replace('#<\?php|\?>|defined\(\s*[\'"]_JEXEC[\'"]\s*\)\s*or\s+die\s*;#i', '', $code);
+
+        return trim($code) === '';
+    }
+
+    /**
+     * Adds the bridge to the 4SEO functions file, with the user's explicit consent
+     * given by the caller. Never creates anything outside libraries/weeblr.
+     *
+     * @return array{ok: bool, code: string}
+     */
+    public static function enableBridge(): array
+    {
+        $file = self::functionsFile();
+
+        if (!is_dir(dirname($file))) {
+            return ['ok' => false, 'code' => 'missing'];
+        }
+
+        $exists = is_file($file);
+        $content = $exists ? file_get_contents($file) : '';
+
+        if ($content === false || ($exists && !is_writable($file)) || (!$exists && !is_writable(dirname($file)))) {
+            return ['ok' => false, 'code' => 'not_writable'];
+        }
+
+        $updated = self::addBridge($content);
+
+        if ($updated === null) {
+            return ['ok' => false, 'code' => 'format'];
+        }
+
+        if ($updated === $content) {
+            return ['ok' => true, 'code' => 'already'];
+        }
+
+        if (file_put_contents($file, $updated, LOCK_EX) === false || !self::bridgeRegistered()) {
+            return ['ok' => false, 'code' => 'write'];
+        }
+
+        return ['ok' => true, 'code' => 'enabled'];
+    }
+
+    /**
+     * Takes the bridge out again and, when AI Friendly created the file, deletes it.
+     *
+     * @return array{ok: bool, code: string}
+     */
+    public static function disableBridge(): array
+    {
+        $file = self::functionsFile();
+
+        if (!is_file($file)) {
+            return ['ok' => true, 'code' => 'absent'];
+        }
+
+        $content = file_get_contents($file);
+
+        if ($content === false || !is_writable($file)) {
+            return ['ok' => false, 'code' => 'not_writable'];
+        }
+
+        $cleaned = self::removeBridge($content);
+
+        if ($cleaned === $content) {
+            return ['ok' => true, 'code' => 'absent'];
+        }
+
+        if (self::isOnlyOurs($content, $cleaned)) {
+            return @unlink($file) ? ['ok' => true, 'code' => 'removed'] : ['ok' => false, 'code' => 'write'];
+        }
+
+        if (file_put_contents($file, $cleaned, LOCK_EX) === false) {
+            return ['ok' => false, 'code' => 'write'];
+        }
+
+        return ['ok' => true, 'code' => 'removed'];
     }
 
     /**

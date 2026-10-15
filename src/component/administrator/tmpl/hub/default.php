@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
@@ -446,11 +452,19 @@ $alerts = array_merge($overview['errors'] ?? [], $overview['warnings'] ?? []);
                     </ul>
 
                     <?php if ($f['available'] && !$f['registered']) : ?>
-                        <p class="aif-hint"><?php echo $e(Text::sprintf('COM_AIFRIENDLY_FORSEO_INSTRUCTIONS', $f['file'])); ?></p>
-                        <div class="aif-snippet">
-                            <pre data-forseo-snippet><?php echo $e($f['snippet']); ?></pre>
-                            <button type="button" data-copy-target="[data-forseo-snippet]"><?php echo $e(Text::_('COM_AIFRIENDLY_COPY')); ?></button>
-                        </div>
+                        <p class="aif-hint"><?php echo $e(Text::sprintf('COM_AIFRIENDLY_FORSEO_CONSENT', $f['file'])); ?></p>
+                        <p><button type="button" data-action="forseo-enable"><?php echo $e(Text::_('COM_AIFRIENDLY_FORSEO_ENABLE')); ?></button></p>
+                        <details class="aif-disclosure">
+                            <summary><?php echo $e(Text::_('COM_AIFRIENDLY_FORSEO_MANUAL')); ?></summary>
+                            <p class="aif-hint"><?php echo $e(Text::sprintf('COM_AIFRIENDLY_FORSEO_INSTRUCTIONS', $f['file'])); ?></p>
+                            <div class="aif-snippet">
+                                <pre data-forseo-snippet><?php echo $e($f['snippet']); ?></pre>
+                                <button type="button" data-copy-target="[data-forseo-snippet]"><?php echo $e(Text::_('COM_AIFRIENDLY_COPY')); ?></button>
+                            </div>
+                        </details>
+                    <?php elseif ($f['available'] && $f['registered']) : ?>
+                        <p class="aif-hint"><?php echo $e(Text::sprintf('COM_AIFRIENDLY_FORSEO_REMOVE_HINT', $f['file'])); ?></p>
+                        <p><button type="button" data-action="forseo-disable"><?php echo $e(Text::_('COM_AIFRIENDLY_FORSEO_DISABLE')); ?></button></p>
                     <?php endif; ?>
                 </article>
 

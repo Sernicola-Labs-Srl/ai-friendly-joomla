@@ -1,6 +1,12 @@
 <?php
 
 /**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
+/**
  * AI Friendly — 4SEO bridge.
  *
  * This file is meant to be included from the weeblr functions file:
@@ -18,7 +24,7 @@
  * resolves to 4SEO, so leaving the include in place is harmless.
  */
 
-defined('WBLIB_EXEC') || defined('_JEXEC') || die;
+defined('_JEXEC') or die;
 
 /** @var object $hooks provided by the 4SEO functions file */
 if (!isset($hooks) || !is_object($hooks) || !method_exists($hooks, 'add')) {

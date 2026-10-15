@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
 namespace Sernicola\Library\AiFriendly\Markdown;
 
 defined('_JEXEC') or die;
@@ -46,7 +52,7 @@ final class Converter
         $html = preg_replace('#<br\s*/?>#i', "\n", $html) ?? $html;
         $html = preg_replace('#</p>#i', "\n\n", $html) ?? $html;
         $html = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $html = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $html) ?? $html;
+        $html = preg_replace('/(?![\t\n\r])[[:cntrl:]]/', '', $html) ?? $html;
 
         // Whitespace cleanup has to spare the indentation of nested list items,
         // which is meaningful Markdown rather than stray formatting.
