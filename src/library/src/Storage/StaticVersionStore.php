@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
 namespace Sernicola\Library\AiFriendly\Storage;
 
 defined('_JEXEC') or die;
@@ -25,7 +31,7 @@ final class StaticVersionStore
         $state = $this->repository->getState($item->key());
         $changed = ($state['checksum'] ?? '') !== $checksum || !is_file($path);
         if ($changed && !File::write($path, $markdown)) {
-            throw new \RuntimeException('Impossibile salvare il file Markdown statico.');
+            throw new \RuntimeException('Unable to save the static Markdown file.');
         }
         $this->repository->saveState($item->key(), [
             'checksum' => $checksum,

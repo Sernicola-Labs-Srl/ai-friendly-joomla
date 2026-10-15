@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
 defined('_JEXEC') or die;
 
 use Joomla\CMS\Factory;
@@ -7,6 +13,27 @@ use Joomla\Filesystem\Folder;
 
 final class Pkg_AifriendlyInstallerScript
 {
+    public function preflight(string $type, $parent): bool
+    {
+        if (!in_array($type, ['install', 'update', 'discover_install'], true)) {
+            return true;
+        }
+
+        // Supported lines: Joomla 5.4 up to (not including) 6.0, and 6.1 or later.
+        $supported = (version_compare(JVERSION, '5.4', '>=') && version_compare(JVERSION, '6.0', '<'))
+            || version_compare(JVERSION, '6.1', '>=');
+        if (!$supported) {
+            Factory::getApplication()->enqueueMessage(
+                sprintf('AI Friendly requires Joomla 5.4, or Joomla 6.1 and later; this site runs Joomla %s.', JVERSION),
+                'error'
+            );
+
+            return false;
+        }
+
+        return true;
+    }
+
     public function postflight(string $type, $parent): void
     {
         if (!in_array($type, ['install', 'update'], true)) {

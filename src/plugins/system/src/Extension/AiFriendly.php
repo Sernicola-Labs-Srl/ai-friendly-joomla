@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
 namespace Sernicola\Plugin\System\AiFriendly\Extension;
 
 defined('_JEXEC') or die;
@@ -30,7 +36,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.3.1';
+    private const VERSION = '2.4.0';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<updates>
+    <update>
+        <name>AI Friendly for Joomla</name>
+        <description>Exposes Joomla content to AI clients through llms.txt, Markdown endpoints and JSON-LD.</description>
+        <element>pkg_aifriendly</element>
+        <type>package</type>
+        <client>site</client>
+        <version>2.4.0</version>
+        <infourl title="AI Friendly for Joomla">https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/releases/tag/v2.4.0</infourl>
+        <downloads>
+            <downloadurl type="full" format="zip">https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/releases/download/v2.4.0/pkg_aifriendly-2.4.0.zip</downloadurl>
+        </downloads>
+        <tags>
+            <tag>stable</tag>
+        </tags>
+        <maintainer>Sernicola Labs</maintainer>
+        <maintainerurl>https://sernicola-labs.com</maintainerurl>
+        <targetplatform name="joomla" version="((5\.4)|(6\.[1-9]))"/>
+        <php_minimum>8.1</php_minimum>
+    </update>
+</updates>

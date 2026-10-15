@@ -2,9 +2,12 @@
 <extension type="library" method="upgrade">
     <name>LIB_AIFRIENDLY</name>
     <libraryname>aifriendly</libraryname>
-    <version>2.3.1</version>
+    <version>2.4.0</version>
     <creationDate>2026-08</creationDate>
     <author>Sernicola Labs</author>
+    <authorEmail>info@sernicolalabs.com</authorEmail>
+    <authorUrl>https://sernicola-labs.com</authorUrl>
+    <copyright>Copyright (C) 2026 Sernicola Labs</copyright>
     <license>GNU General Public License version 2 or later</license>
     <description>LIB_AIFRIENDLY_DESCRIPTION</description>
     <namespace path="src">Sernicola\Library\AiFriendly</namespace>

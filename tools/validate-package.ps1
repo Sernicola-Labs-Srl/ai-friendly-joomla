@@ -42,6 +42,17 @@ foreach ($relative in $literals.Keys) {
 }
 Write-Output "Version is consistent across manifests and code"
 
+# The update server serves update.xml from the main branch. If it points at a
+# version or a download that does not match the package, Joomla offers an
+# update that cannot be installed.
+$update = [xml](Get-Content -LiteralPath (Join-Path $projectRoot "update.xml") -Raw)
+$entry = $update.updates.update
+if ($entry.version -ne $expected) { throw "update.xml declares $($entry.version), expected $expected" }
+$download = $entry.downloads.downloadurl.'#text'
+if ($download -notlike "*/releases/download/v$expected/pkg_aifriendly-$expected.zip") { throw "update.xml download URL does not match v${expected}: $download" }
+if ($entry.element -ne "pkg_aifriendly" -or $entry.type -ne "package") { throw "update.xml must target pkg_aifriendly of type package" }
+Write-Output "update.xml matches the package"
+
 $php = Get-Command php -ErrorAction SilentlyContinue
 if ($php) {
     Get-ChildItem -LiteralPath $projectRoot -Recurse -File -Filter "*.php" | ForEach-Object {

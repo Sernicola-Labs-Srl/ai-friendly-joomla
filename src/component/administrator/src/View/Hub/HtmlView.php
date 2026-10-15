@@ -1,5 +1,11 @@
 <?php
 
+/**
+ * @package     AI Friendly for Joomla
+ * @copyright   Copyright (C) 2026 Sernicola Labs. All rights reserved.
+ * @license     GNU General Public License version 2 or later; see LICENSE
+ */
+
 namespace Sernicola\Component\AiFriendly\Administrator\View\Hub;
 
 defined('_JEXEC') or die;
@@ -16,7 +22,7 @@ use Sernicola\Library\AiFriendly\Support\Options;
 
 final class HtmlView extends BaseHtmlView
 {
-    public const VERSION = '2.3.1';
+    public const VERSION = '2.4.0';
 
     public array $options = [];
     public array $overview = [];

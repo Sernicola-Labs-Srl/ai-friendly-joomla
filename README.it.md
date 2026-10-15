@@ -78,4 +78,16 @@ public function collect(EventInterface $event): void
 
 ## Distribuzione
 
-Le release sono ZIP da installare manualmente. Non è configurato un update server remoto.
+Le release sono pubblicate come pacchetti ZIP su [GitHub Releases](https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/releases). Il pacchetto dichiara un update server (`update.xml` sul branch `main`): Joomla propone le nuove versioni da **Sistema → Aggiorna → Estensioni**. La prima release che lo include va installata a mano.
+
+## Privacy e servizi esterni
+
+AI Friendly non effettua richieste di rete in uscita e non invia dati a terzi. Tutto ciò che produce nasce dal tuo sito e viene servito dal tuo dominio. L'unico link esterno è il logo Sernicola Labs nel piè di pagina dell'amministrazione.
+
+## Supporto
+
+Bug e richieste vanno aperti sull'[issue tracker](https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/issues).
+
+## Licenza
+
+GNU General Public License versione 2 o successiva. Vedi `LICENSE`.
