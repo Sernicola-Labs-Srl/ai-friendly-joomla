@@ -78,13 +78,14 @@ final class Diagnostics
             $warnings[] = ['code' => 'last_run_errors', 'level' => 'warning', 'message' => 'L ultima rigenerazione ha riportato ' . $failures . ' errori.'];
         }
 
-        if (!empty($this->options['auto_regenerate']) && $this->scheduledTaskMissing()) {
+        if ((!empty($this->options['auto_regenerate']) || !empty($this->options['llms_full_enabled'])) && $this->scheduledTaskMissing()) {
             $warnings[] = ['code' => 'task_not_scheduled', 'level' => 'warning', 'message' => 'Task pianificato abilitato ma non configurato in Attivita pianificate.'];
         }
 
         return [
             'warnings' => $warnings, 'errors' => $errors, 'included_count' => $included,
             'total_count' => $this->registry->count(), 'static' => $static,
+            'llms_full' => FullCorpus::state(!empty($this->options['llms_full_enabled']), (string) ($this->options['llms_full_hash'] ?? '')),
             'llms_url' => rtrim(Uri::root(), '/') . '/llms.txt',
             'sitemap_url' => rtrim(Uri::root(), '/') . '/sitemap.xml',
             'events' => $this->repository->events(10),

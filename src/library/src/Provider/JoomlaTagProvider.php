@@ -147,7 +147,7 @@ final class JoomlaTagProvider implements ContentProviderInterface
         }
 
         $metadata = json_decode((string) ($tag->metadata ?? ''), true) ?: [];
-        $groups = Factory::getApplication()->getIdentity()->getAuthorisedViewLevels();
+        $groups = \Sernicola\Library\AiFriendly\Support\ViewLevels::current();
 
         return new ContentItem(
             'tag',
@@ -162,6 +162,7 @@ final class JoomlaTagProvider implements ContentProviderInterface
             [
                 'description' => (string) ($tag->metadesc ?? ''),
                 'noindex' => str_contains(strtolower((string) ($metadata['robots'] ?? '')), 'noindex'),
+                'access_level' => (int) $tag->access,
             ],
             ['category_ids' => [], 'tag_ids' => [(int) $tag->id]],
             (string) ($tag->modified_time ?: $tag->created_time),

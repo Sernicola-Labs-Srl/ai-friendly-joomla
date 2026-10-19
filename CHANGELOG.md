@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.0
+
+- Full regeneration now runs as a persistent, resumable job with a fixed content queue, bounded steps, progress in the Hub, and separate timing for queries, generation, cleanup and index construction.
+- Optional `/llms-full.txt` publishes the public Markdown corpus only after a successful complete pass. An existing file is replaced or removed only when AI Friendly still owns its recorded hash.
+- Author name changes refresh the author's Markdown in batches and invalidate the dynamic cache. The short `/llms.txt` index decodes HTML entities.
+- Joomla Schema page rules support `Service`; FAQ rules can read numbered Joomla Custom Fields. Founders accept an optional profile URL, and Event pages reuse the configured Place where available.
+
 An Italian version of this file is kept in `CHANGELOG.it.md`.
 
 ## 2.4.1

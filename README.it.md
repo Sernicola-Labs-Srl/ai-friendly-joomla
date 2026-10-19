@@ -19,6 +19,7 @@ Il package installa la libreria condivisa, il componente amministrativo AI Conte
 ## Endpoint pubblici
 
 - `/llms.txt`
+- `/llms-full.txt` opzionale dopo una rigenerazione completa riuscita
 - `/index.html.md` per la home page
 - `<percorso-canonico>.md` per articoli, contatti e pagine YOOtheme ammessi
 - rotte di categoria e tag con `.md` per l'output collezione

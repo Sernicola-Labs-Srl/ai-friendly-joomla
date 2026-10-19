@@ -163,7 +163,7 @@ final class JoomlaContactProvider implements ContentProviderInterface
 
         $params = json_decode((string) ($contact->params ?? ''), true) ?: [];
         $metadata = json_decode((string) ($contact->metadata ?? ''), true) ?: [];
-        $groups = Factory::getApplication()->getIdentity()->getAuthorisedViewLevels();
+        $groups = \Sernicola\Library\AiFriendly\Support\ViewLevels::current();
 
         return new ContentItem(
             'contact',
@@ -179,6 +179,7 @@ final class JoomlaContactProvider implements ContentProviderInterface
                 'description' => (string) ($contact->metadesc ?? ''),
                 'category' => (string) ($contact->category_title ?? ''),
                 'noindex' => str_contains(strtolower((string) ($metadata['robots'] ?? '')), 'noindex'),
+                'access_level' => (int) $contact->access,
             ],
             ['category_ids' => [(int) $contact->catid], 'tag_ids' => []],
             (string) ($contact->modified ?: $contact->created),

@@ -72,6 +72,7 @@ final class SchemaBuilder
                 'priceRange' => trim((string) ($this->options['schema_price_range'] ?? '')),
                 'openingHoursSpecification' => $this->openingHours(),
                 'geo' => $this->geo(),
+                'location' => ($this->address() || $this->geo()) ? ['@id' => $home . '#place'] : null,
                 'hasMap' => trim((string) ($this->options['schema_has_map'] ?? '')),
             ]);
         }
@@ -85,6 +86,11 @@ final class SchemaBuilder
             'potentialAction' => $this->searchAction(),
         ];
         $graph = [$website, $identity];
+        if ($this->address() || $this->geo()) {
+            $graph[] = ['@type' => 'Place', '@id' => $home . '#place',
+                'name' => $identity['name'], 'address' => $this->address(), 'geo' => $this->geo(),
+                'hasMap' => trim((string) ($this->options['schema_has_map'] ?? ''))];
+        }
         if ($catalog = $this->offerCatalog($identityId, $home)) {
             $graph[] = $catalog;
             if ($identityType !== 'Person') {
@@ -185,8 +191,9 @@ final class SchemaBuilder
     {
         $founders = [];
         foreach ($this->lines('schema_founders') as $line) {
-            [$name, $role] = array_pad(array_map('trim', explode('|', $line, 2)), 2, '');
-            if ($name !== '') $founders[] = array_filter(['@type' => 'Person', 'name' => $name, 'jobTitle' => $role]);
+            [$name, $role, $url] = array_pad(array_map('trim', explode('|', $line, 3)), 3, '');
+            if ($name !== '') $founders[] = array_filter(['@type' => 'Person', 'name' => $name, 'jobTitle' => $role,
+                'sameAs' => filter_var($url, FILTER_VALIDATE_URL) ? [$url] : null]);
         }
         return $founders;
     }

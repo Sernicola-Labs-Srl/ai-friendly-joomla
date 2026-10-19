@@ -16,10 +16,12 @@ use Joomla\Registry\Registry;
 
 final class Options
 {
+    private static ?array $cached = null;
+
     public static function defaults(): array
     {
         return [
-            'llms_content' => '', 'llms_include_auto' => 1,
+            'llms_content' => '', 'llms_include_auto' => 1, 'llms_full_enabled' => 0,
             'include_articles' => 1, 'include_categories' => 1, 'articles_limit' => 100,
             // New content types default to off: an upgrade must not start
             // publishing contacts and tag pages without the site asking for it.
@@ -57,9 +59,10 @@ final class Options
 
     public static function get(): array
     {
+        if (self::$cached !== null) return self::$cached;
         $params = ComponentHelper::getParams('com_aifriendly');
 
-        return array_replace(self::defaults(), $params->toArray());
+        return self::$cached = array_replace(self::defaults(), $params->toArray());
     }
 
     public static function registry(): Registry
@@ -76,13 +79,23 @@ final class Options
     public static function save(array $changes): void
     {
         $db = Factory::getContainer()->get('DatabaseDriver');
-        $merged = array_replace(self::get(), $changes);
+        // ComponentHelper caches params for the request. A job may save the
+        // corpus hash and its dirty flag in the same request; read the latest
+        // row so the second write cannot erase the first one.
+        $select = $db->getQuery(true)
+            ->select($db->quoteName('params'))
+            ->from($db->quoteName('#__extensions'))
+            ->where($db->quoteName('type') . ' = ' . $db->quote('component'))
+            ->where($db->quoteName('element') . ' = ' . $db->quote('com_aifriendly'));
+        $current = json_decode((string) $db->setQuery($select)->loadResult(), true) ?: [];
+        $merged = array_replace(self::defaults(), $current, $changes);
         $query = $db->getQuery(true)
             ->update($db->quoteName('#__extensions'))
             ->set($db->quoteName('params') . ' = ' . $db->quote(json_encode($merged, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)))
             ->where($db->quoteName('type') . ' = ' . $db->quote('component'))
             ->where($db->quoteName('element') . ' = ' . $db->quote('com_aifriendly'));
         $db->setQuery($query)->execute();
+        self::$cached = $merged;
     }
 }
 

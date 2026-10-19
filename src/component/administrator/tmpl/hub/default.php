@@ -528,6 +528,7 @@ $alerts = array_merge($overview['errors'] ?? [], $overview['warnings'] ?? []);
                     <legend><?php echo $e(Text::_('COM_AIFRIENDLY_AUTOMATION_FILES')); ?></legend>
                     <div class="aif-form-grid">
                         <?php echo $toggle('static_md_files', 'COM_AIFRIENDLY_STATIC_MD_FILES', 'COM_AIFRIENDLY_STATIC_MD_FILES_HINT'); ?>
+                        <?php echo $toggle('llms_full_enabled', 'COM_AIFRIENDLY_LLMS_FULL_ENABLED', 'COM_AIFRIENDLY_LLMS_FULL_HINT'); ?>
                         <?php echo $toggle('regenerate_on_change', 'COM_AIFRIENDLY_REGENERATE_ON_CHANGE', 'COM_AIFRIENDLY_REGENERATE_ON_CHANGE_HINT'); ?>
                         <?php echo $field(['key' => 'dynamic_cache_ttl', 'label' => 'COM_AIFRIENDLY_CACHE_TTL', 'type' => 'number', 'hint' => 'COM_AIFRIENDLY_CACHE_TTL_HINT', 'attrs' => ' min="0" max="86400" step="60"']); ?>
                     </div>
@@ -560,6 +561,9 @@ $alerts = array_merge($overview['errors'] ?? [], $overview['warnings'] ?? []);
                     <div class="aif-run-output" data-run-output aria-live="polite">
                         <p class="aif-empty"><?php echo $e(Text::_('COM_AIFRIENDLY_RUN_EMPTY')); ?></p>
                     </div>
+                    <p data-full-status><?php echo $e(Text::_('COM_AIFRIENDLY_LLMS_FULL_STATUS')); ?>: <?php echo $e(!empty($overview['llms_full']['ready']) ? Text::_('COM_AIFRIENDLY_LLMS_FULL_READY') . ' (' . number_format((int) $overview['llms_full']['size']) . ' B)' : Text::_('COM_AIFRIENDLY_LLMS_FULL_WAITING')); ?>
+                        <?php if (!empty($overview['llms_full']['ready'])) : ?><a href="<?php echo $e($overview['llms_full']['url']); ?>" target="_blank" rel="noopener">llms-full.txt</a><?php endif; ?>
+                    </p>
                 </article>
 
                 <div class="aif-actionbar">

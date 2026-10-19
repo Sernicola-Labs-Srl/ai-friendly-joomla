@@ -27,6 +27,8 @@ use Sernicola\Library\AiFriendly\Schema\SchemaBuilder;
 use Sernicola\Library\AiFriendly\Service\Factory as AiFactory;
 use Sernicola\Library\AiFriendly\Service\LlmsBuilder;
 use Sernicola\Library\AiFriendly\Service\Regenerator;
+use Sernicola\Library\AiFriendly\Service\RegenerationJob;
+use Sernicola\Library\AiFriendly\Service\FullCorpus;
 use Sernicola\Library\AiFriendly\Service\ResponseCache;
 use Sernicola\Library\AiFriendly\Support\Lang;
 use Sernicola\Library\AiFriendly\Support\Options;
@@ -36,10 +38,11 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.4.1';
+    private const VERSION = '2.5.0';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;
+    private array $previousUserNames = [];
 
     public static function getSubscribedEvents(): array
     {
@@ -49,7 +52,10 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             'onError' => 'onError',
             'onBeforeCompileHead' => 'onBeforeCompileHead',
             'onContentAfterSave' => 'onContentAfterSave',
+            'onContentAfterDelete' => 'onContentAfterDelete',
             'onContentChangeState' => 'onContentChangeState',
+            'onUserBeforeSave' => 'onUserBeforeSave',
+            'onUserAfterSave' => 'onUserAfterSave',
             // Last of all: the Schema.org plugins of the article, event and so on add their
             // nodes in listeners of their own, and the page types need those nodes to exist.
             'onSchemaBeforeCompileHead' => ['onSchemaBeforeCompileHead', Priority::MIN],
@@ -106,6 +112,10 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
         if ($base !== '/' && str_starts_with($path, $base)) $path = Path::normalize(substr($path, strlen($base)) ?: '/');
         if ($path === '/llms.txt') {
             $this->serveLlms();
+            return;
+        }
+        if ($path === '/llms-full.txt') {
+            $this->serveFullCorpus();
             return;
         }
         if (!preg_match('#(?:\.md|/index\.html\.md)$#i', $path)) return;
@@ -175,6 +185,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 
     public function onContentAfterSave(EventInterface $event): void
     {
+        RegenerationJob::create()->markDirty();
         $options = Options::get();
         if (empty($options['regenerate_on_save']) || empty($options['static_md_files'])) return;
         $args = array_values($event->getArguments());
@@ -197,7 +208,47 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 
     public function onContentChangeState(EventInterface $event): void
     {
+        RegenerationJob::create()->markDirty();
         AiFactory::repository()->addEvent('content_state_change', ['arguments' => array_keys($event->getArguments())]);
+    }
+
+    public function onContentAfterDelete(EventInterface $event): void
+    {
+        RegenerationJob::create()->markDirty();
+    }
+
+    public function onUserBeforeSave(EventInterface $event): void
+    {
+        $user = method_exists($event, 'getUser') ? $event->getUser() : $event->getArgument('user', []);
+        if (is_array($user) && !empty($user['id'])) $this->previousUserNames[(int) $user['id']] = (string) ($user['name'] ?? '');
+    }
+
+    public function onUserAfterSave(EventInterface $event): void
+    {
+        if (method_exists($event, 'getSavingResult') && !$event->getSavingResult()) return;
+        $user = method_exists($event, 'getUser') ? $event->getUser() : $event->getArgument('user', []);
+        if (!is_array($user) || empty($user['id'])) return;
+        $id = (int) $user['id'];
+        if (!array_key_exists($id, $this->previousUserNames) || $this->previousUserNames[$id] === (string) ($user['name'] ?? '')) return;
+        Options::save(['author_cache_epoch' => microtime(true)]);
+        $jobs = RegenerationJob::create();
+        $jobs->markDirty();
+        $jobs->startAuthor($id);
+    }
+
+    private function serveFullCorpus(): never
+    {
+        $options = Options::get();
+        $state = FullCorpus::state(!empty($options['llms_full_enabled']), (string) ($options['llms_full_hash'] ?? ''));
+        if (!$state['ready']) $this->notFound('corpus-unavailable');
+        $app = $this->getApplication();
+        $app->setHeader('Content-Type', 'text/plain; charset=UTF-8', true);
+        $app->setHeader('X-Content-Type-Options', 'nosniff', true);
+        $app->setHeader('X-Robots-Tag', 'noindex, follow', true);
+        $app->setHeader('Content-Length', (string) $state['size'], true);
+        $app->sendHeaders();
+        readfile(FullCorpus::target());
+        $app->close();
     }
 
     private function serveLlms(): never
@@ -472,7 +523,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
         return array_map('intval', $db->setQuery($query)->loadColumn() ?: [$catId]);
     }
 
-    /** @return array{introtext:string, fulltext:string} */
+    /** @return array{introtext:string, fulltext:string, fields:array<string,string>} */
     private function storedText(\Sernicola\Library\AiFriendly\Dto\ContentItem $item): array
     {
         $db = Factory::getContainer()->get('DatabaseDriver');
@@ -483,7 +534,17 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             ->where($db->quoteName('id') . ' = :id')
             ->bind(':id', $id, \Joomla\Database\ParameterType::INTEGER);
         $row = $db->setQuery($query)->loadObject();
-        return ['introtext' => (string) ($row->introtext ?? ''), 'fulltext' => (string) ($row->fulltext ?? '')];
+        $fieldsQuery = $db->getQuery(true)
+            ->select([$db->quoteName('f.name'), $db->quoteName('v.value')])
+            ->from($db->quoteName('#__fields', 'f'))
+            ->join('INNER', $db->quoteName('#__fields_values', 'v') . ' ON v.field_id = f.id')
+            ->where($db->quoteName('f.context') . ' = ' . $db->quote('com_content.article'))
+            ->where($db->quoteName('v.item_id') . ' = ' . $id);
+        $fields = [];
+        foreach ($db->setQuery($fieldsQuery)->loadAssocList() ?: [] as $field) {
+            $fields[(string) $field['name']] = (string) $field['value'];
+        }
+        return ['introtext' => (string) ($row->introtext ?? ''), 'fulltext' => (string) ($row->fulltext ?? ''), 'fields' => $fields];
     }
 
     /**

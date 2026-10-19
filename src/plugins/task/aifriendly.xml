@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="plugin" group="task" method="upgrade">
     <name>PLG_TASK_AIFRIENDLY</name>
-    <version>2.4.1</version>
+    <version>2.5.0</version>
     <creationDate>2026-08</creationDate>
     <author>Sernicola Labs</author>
     <authorEmail>info@sernicolalabs.com</authorEmail>

@@ -46,6 +46,7 @@ final class ResponseCache
         'exclude_tags',
         'exclude_url_patterns',
         'exclude_noindex',
+        'author_cache_epoch',
     ];
 
     private $controller = null;

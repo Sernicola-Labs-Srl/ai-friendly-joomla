@@ -19,6 +19,7 @@ The package installs a shared library, the AI Content Hub administrator componen
 ## Public endpoints
 
 - `/llms.txt`
+- Optional `/llms-full.txt` after a successful full regeneration
 - `/index.html.md` for the home page
 - `<canonical-path>.md` for eligible articles, contacts and YOOtheme pages
 - eligible category and tag routes with `.md` for collection output
@@ -28,6 +29,8 @@ Markdown responses are public, carry `X-Robots-Tag: noindex, follow`, and expose
 ## Administration
 
 Open **Components → AI Friendly**. The Hub includes Overview, Content, Rules, Schema, and Automation sections, plus snapshots, diagnostics, static Markdown regeneration, and a timeline.
+
+Full regeneration is a resumable job. The Hub shows its progress and Joomla Scheduled Tasks can continue it after the browser closes. Enable **Publish llms-full.txt** in Automation to write a complete public corpus to the document root; a scheduled task is needed for unattended refreshes. The option starts disabled.
 
 The `Content - AI Friendly` plugin adds the exclusion switch and the last generation date to the article editor.
 

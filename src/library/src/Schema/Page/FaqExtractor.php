@@ -50,6 +50,22 @@ final class FaqExtractor
         return $faq;
     }
 
+    /** FAQ fields use numbered names such as faq_question_1 and faq_answer_1. */
+    public static function fromFields(array $fields, string $questionPrefix, string $answerPrefix, string $home, string $flag = ''): array
+    {
+        if ($questionPrefix === '' || $answerPrefix === '' || ($flag !== '' && empty($fields[$flag]))) return [];
+        $faq = [];
+        $seen = [];
+        for ($index = 1; $index <= 50; $index++) {
+            $question = HtmlText::plain((string) ($fields[$questionPrefix . $index] ?? ''));
+            $answer = HtmlText::sanitize((string) ($fields[$answerPrefix . $index] ?? ''), $home);
+            if ($question === '' || HtmlText::plain($answer) === '' || isset($seen[mb_strtolower($question)])) continue;
+            $seen[mb_strtolower($question)] = true;
+            $faq[] = ['question' => $question, 'answer' => $answer];
+        }
+        return $faq;
+    }
+
     /**
      * @return array<int, array{0:string, 1:string}>
      */

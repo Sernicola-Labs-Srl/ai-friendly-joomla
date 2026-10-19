@@ -29,7 +29,7 @@ final class LlmsBuilder
         $custom = trim((string) ($this->options['llms_content'] ?? ''));
         $auto = !empty($this->options['llms_include_auto']);
         if ($custom !== '' && !$auto) {
-            return $this->dispatch($custom);
+            return $this->dispatch(html_entity_decode($custom, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
         }
         $config = Factory::getApplication()->getConfig();
         $output = $custom !== '' ? $custom . "\n\n" : '# ' . $config->get('sitename', 'Joomla') . "\n> " . ($config->get('MetaDesc') ?: Lang::text('PLG_SYSTEM_AIFRIENDLY_SITE_FALLBACK_DESC', 'Website')) . "\n\n";
@@ -50,7 +50,7 @@ final class LlmsBuilder
             }
         }
 
-        return $this->dispatch(trim($output) . "\n");
+        return $this->dispatch(html_entity_decode(trim($output) . "\n", ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
     private function dispatch(string $content): string

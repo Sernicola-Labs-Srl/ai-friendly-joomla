@@ -91,6 +91,25 @@ final class Pkg_AifriendlyInstallerScript
      */
     public function uninstall($parent): bool
     {
+        try {
+            $db = Factory::getContainer()->get('DatabaseDriver');
+            $query = $db->getQuery(true)->select($db->quoteName('params'))
+                ->from($db->quoteName('#__extensions'))
+                ->where($db->quoteName('type') . ' = ' . $db->quote('component'))
+                ->where($db->quoteName('element') . ' = ' . $db->quote('com_aifriendly'));
+            $params = json_decode((string) $db->setQuery($query)->loadResult(), true) ?: [];
+            $known = (string) ($params['llms_full_hash'] ?? '');
+            $target = JPATH_ROOT . '/llms-full.txt';
+            if ($known !== '' && is_file($target)) {
+                $actual = hash_file('sha256', $target);
+                if (is_string($actual) && hash_equals($known, $actual)) unlink($target);
+            }
+            foreach (glob(JPATH_ROOT . '/.aifriendly-llms-full-*.tmp') ?: [] as $temporary) {
+                if (is_file($temporary)) unlink($temporary);
+            }
+        } catch (\Throwable) {
+            // Uninstall remains possible if the component table has gone already.
+        }
         $file = JPATH_LIBRARIES . '/weeblr/forseo_functions.php';
 
         if (!is_file($file) || !is_writable($file)) {

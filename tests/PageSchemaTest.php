@@ -137,7 +137,7 @@ final class PageSchemaTest extends TestCase
 
         $this->assertSame('Event', $graph[3]['@type']);
         $this->assertSame('2026-04-11T18:15', $graph[3]['startDate']);
-        $this->assertSame('Teatro PIME', $graph[3]['location']['name']);
+        $this->assertSame('Scuola', $graph[3]['location']['name']);
 
         $undated = $this->item(8, 'Concerto', '<p>Prossimamente</p>', 'Iniziative');
         $graph = PageSchema::apply($this->graph(8), $undated, ['scope' => 'category', 'id' => 25, 'type' => 'Event', 'params' => []], self::HOME, fn () => ['introtext' => '', 'fulltext' => '']);
@@ -154,6 +154,29 @@ final class PageSchemaTest extends TestCase
         $this->assertSame('DefinedTermSet', $graph[4]['@type']);
         $this->assertSame(self::HOME . '#glossary', $graph[4]['@id']);
         $this->assertSame('https://example.test/glossario.html', $graph[4]['url']);
+    }
+
+    public function testServiceReplacesTheArticleNodeAndUsesTheCanonicalPage(): void
+    {
+        $graph = PageSchema::apply($this->graph(7), $this->item(7, 'Consulenza'),
+            ['scope' => 'category', 'id' => 42, 'type' => 'Service', 'params' => ['Consulenza', 'Italia']],
+            self::HOME, fn () => ['introtext' => '', 'fulltext' => '']);
+        $this->assertSame('WebPage', $graph[2]['@type']);
+        $this->assertSame(self::HOME . 'pagina.html#service', $graph[3]['@id']);
+        $this->assertSame(['@id' => self::ORG], $graph[3]['provider']);
+        $this->assertSame('Country', $graph[3]['areaServed']['@type']);
+        $this->assertCount(0, array_filter($graph, static fn ($node) => ($node['@type'] ?? '') === 'Article'));
+    }
+
+    public function testConfiguredCustomFieldsProvideFaqWhenArticleMarkupHasNone(): void
+    {
+        $graph = PageSchema::apply($this->graph(), $this->item(),
+            ['scope' => 'article', 'id' => 43, 'type' => 'FAQPage', 'params' => ['faq_question_', 'faq_answer_', 'faq_enabled']],
+            self::HOME, fn () => ['introtext' => '', 'fulltext' => '', 'fields' => [
+                'faq_enabled' => '1', 'faq_question_1' => 'Dove?', 'faq_answer_1' => '<p>Qui.</p>',
+            ]]);
+        $this->assertSame('FAQPage', $graph[2]['@type']);
+        $this->assertSame('Dove?', $graph[2]['mainEntity'][0]['name']);
     }
 
     public function testEntityIdsUseTheAddressOfThePageWithoutParameters(): void

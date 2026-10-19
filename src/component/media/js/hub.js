@@ -236,6 +236,15 @@
       if (card) card.classList.toggle('is-flagged', alerts.length > 0);
       renderDiagnostics(alerts);
       renderEvents(data.events || []);
+      var full = data.llms_full || {};
+      var fullStatus = hub.querySelector('[data-full-status]');
+      if (fullStatus) {
+        fullStatus.innerHTML = esc(T('COM_AIFRIENDLY_LLMS_FULL_STATUS', 'Full corpus')) + ': '
+          + (full.ready
+            ? esc(T('COM_AIFRIENDLY_LLMS_FULL_READY', 'Ready') + ' (' + (full.size || 0) + ' B)')
+              + ' <a href="' + esc(safeUrl(full.url)) + '" target="_blank" rel="noopener">llms-full.txt</a>'
+            : esc(T('COM_AIFRIENDLY_LLMS_FULL_WAITING', 'Waiting for a complete regeneration')));
+      }
     }));
   }
 
@@ -431,17 +440,32 @@
   function regenerate(button) {
     var output = hub.querySelector('[data-run-output]');
     output.innerHTML = '<p>' + esc(T('COM_AIFRIENDLY_RUN_PENDING', 'Regeneration in progress...')) + '</p>';
-
-    return run(button, request('regenerate', { force: 1 })
-      .then(function (data) {
-        output.innerHTML = renderRun(data || {});
-        return refreshOverview();
-      })
+    return run(button, request('regenerationStart', { force: 1 }).then(followRegeneration)
       .catch(function (error) {
         output.innerHTML = '<p class="aif-empty">' + esc(error.message) + '</p>';
         throw error;
       }));
   }
+
+  function followRegeneration(job) {
+    var output = hub.querySelector('[data-run-output]');
+    if (!job) return Promise.resolve();
+    if (job.status === 'running' || job.status === 'indexing') {
+      output.innerHTML = '<p>' + esc(T('COM_AIFRIENDLY_RUN_PROGRESS', 'Regeneration')) + ': '
+        + esc((job.stats || {}).processed || 0) + '/' + esc(job.total || 0) + '</p>';
+      return new Promise(function (resolve) { window.setTimeout(resolve, 400); })
+        .then(function () { return request(job.status === 'indexing' ? 'regenerationStatus' : 'regenerationStep'); })
+        .then(followRegeneration);
+    }
+    output.innerHTML = job.status === 'failed'
+      ? '<p class="aif-empty">' + esc(job.error || T('COM_AIFRIENDLY_RUN_FAILED', 'Regeneration failed.')) + '</p>' + renderRun(job.stats || {})
+      : renderRun(job.stats || {});
+    return refreshOverview();
+  }
+
+  request('regenerationStatus').then(function (job) {
+    if (job && (job.status === 'running' || job.status === 'indexing')) return followRegeneration(job);
+  }).catch(function () {});
 
   function clearVersions(button) {
     if (!window.confirm(T('COM_AIFRIENDLY_CLEAR_CONFIRM', 'Delete all static Markdown files?'))) return Promise.resolve();

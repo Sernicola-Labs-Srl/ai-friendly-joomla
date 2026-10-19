@@ -35,7 +35,7 @@ use Sernicola\Library\AiFriendly\Schema\Page\HtmlText;
  */
 final class PageSchema
 {
-    public const TYPES = ['Article', 'WebPage', 'AboutPage', 'ContactPage', 'FAQPage', 'Course', 'Person', 'Event', 'DefinedTerm'];
+    public const TYPES = ['Article', 'WebPage', 'AboutPage', 'ContactPage', 'FAQPage', 'Course', 'Person', 'Event', 'Service', 'DefinedTerm'];
 
     /**
      * @return array<int, array{scope:string, id:int, type:string, params:array<int, string>}>
@@ -129,6 +129,9 @@ final class PageSchema
             case 'FAQPage':
                 $stored = $raw();
                 $faq = FaqExtractor::extract($stored['introtext'], $stored['fulltext'], $home);
+                if (!$faq && count($rule['params']) >= 2) {
+                    $faq = FaqExtractor::fromFields((array) ($stored['fields'] ?? []), $rule['params'][0], $rule['params'][1], $home, $rule['params'][2] ?? '');
+                }
 
                 if ($faq) {
                     $page['mainEntity'] = array_map(static fn (array $qa): array => [
@@ -151,6 +154,13 @@ final class PageSchema
             case 'Course':
                 $page['@type'] = 'WebPage';
                 $node = self::course($item, $orgId, $url);
+                $page['mainEntity'] = ['@id' => $node['@id']];
+                $extra[] = $node;
+                break;
+
+            case 'Service':
+                $page['@type'] = 'WebPage';
+                $node = self::service($item, $orgId, $url, $rule['params']);
                 $page['mainEntity'] = ['@id' => $node['@id']];
                 $extra[] = $node;
                 break;
@@ -310,6 +320,19 @@ final class PageSchema
         ];
     }
 
+    /** Optional rule parameters: service type, area served. */
+    private static function service(ContentItem $item, string $orgId, string $url, array $params): array
+    {
+        return [
+            '@type' => 'Service', '@id' => $url . '#service', 'url' => $url,
+            'name' => HtmlText::plain($item->title), 'description' => self::description($item),
+            'serviceType' => $params[0] ?? '',
+            'areaServed' => !empty($params[1]) ? ['@type' => 'Country', 'name' => $params[1]] : null,
+            'provider' => ['@id' => $orgId],
+            'image' => $item->metadata['featured_image'] ?? null,
+        ];
+    }
+
     /**
      * @param array<int, mixed> $graph
      */
@@ -332,9 +355,16 @@ final class PageSchema
             }
         }
 
-        $location = stripos($plain, 'teatro pime') !== false
-            ? ['@type' => 'Place', 'name' => 'Teatro PIME', 'address' => ['@type' => 'PostalAddress', 'addressLocality' => $org['address']['addressLocality'] ?? '', 'addressCountry' => $org['address']['addressCountry'] ?? '']]
-            : ['@type' => 'Place', 'name' => $org['name'] ?? '', 'address' => $org['address'] ?? null];
+        $location = null;
+        foreach ($graph as $node) {
+            if (is_array($node) && in_array('Place', (array) ($node['@type'] ?? []), true) && !empty($node['@id'])) {
+                $location = ['@id' => $node['@id']];
+                break;
+            }
+        }
+        if ($location === null && !empty($org['address'])) {
+            $location = ['@type' => 'Place', 'name' => $org['name'] ?? '', 'address' => $org['address']];
+        }
 
         return [
             '@type' => 'Event',

@@ -21,6 +21,8 @@ use Sernicola\Library\AiFriendly\Service\Diagnostics;
 use Sernicola\Library\AiFriendly\Service\Factory as AiFactory;
 use Sernicola\Library\AiFriendly\Service\LlmsBuilder;
 use Sernicola\Library\AiFriendly\Service\Regenerator;
+use Sernicola\Library\AiFriendly\Service\RegenerationJob;
+use Sernicola\Library\AiFriendly\Service\FullCorpus;
 use Sernicola\Library\AiFriendly\Support\Options;
 
 final class ApiController extends BaseController
@@ -63,6 +65,7 @@ final class ApiController extends BaseController
         if ($key === '') throw new \InvalidArgumentException(Text::_('COM_AIFRIENDLY_ERR_CONTENT_KEY_MISSING'));
         $repository = AiFactory::repository();
         $excluded = $repository->toggleExcluded($key);
+        RegenerationJob::create()->markDirty();
         $repository->addEvent('content_exclusion_toggle', ['key' => $key, 'excluded' => $excluded]);
         $this->respond(['key' => $key, 'excluded' => $excluded]);
     }
@@ -114,13 +117,25 @@ final class ApiController extends BaseController
 
     public function regenerate(): void
     {
+        $this->regenerationStart();
+    }
+
+    public function regenerationStart(): void
+    {
         $this->guard();
-        $options = Options::get();
-        $repository = AiFactory::repository();
-        $registry = AiFactory::registry();
-        $regenerator = new Regenerator($registry, AiFactory::rules($repository), AiFactory::staticStore($repository), $repository, $options);
-        $input = Factory::getApplication()->getInput();
-        $this->respond($regenerator->run(max(1, $input->getInt('limit', (int) $options['regenerate_batch_size'])), max(0, $input->getInt('offset')), (bool) $input->getBool('force'), 'admin'));
+        $this->respond(RegenerationJob::create()->start((bool) Factory::getApplication()->getInput()->getBool('force'), 'admin'));
+    }
+
+    public function regenerationStep(): void
+    {
+        $this->guard();
+        $this->respond(RegenerationJob::create()->step());
+    }
+
+    public function regenerationStatus(): void
+    {
+        $this->guard();
+        $this->respond(RegenerationJob::create()->status());
     }
 
     public function prune(): void
@@ -190,7 +205,14 @@ final class ApiController extends BaseController
             else $value = is_string($value) ? trim($value) : $value;
             $clean[$key] = $value;
         }
+        $before = Options::get();
         $this->saveOptions($clean);
+        if (!empty($before['llms_full_enabled']) && array_key_exists('llms_full_enabled', $clean) && !$clean['llms_full_enabled']) {
+            FullCorpus::removeOwned((string) ($before['llms_full_hash'] ?? ''));
+            Options::save(['llms_full_hash' => '']);
+        } elseif (!empty($clean['llms_full_enabled']) || array_intersect(array_keys($clean), ['include_articles', 'include_contacts', 'include_tags', 'exclude_categories', 'exclude_tags', 'exclude_url_patterns', 'exclude_noindex'])) {
+            RegenerationJob::create()->markDirty();
+        }
         AiFactory::repository()->addEvent('settings_save', ['keys' => array_keys($clean)]);
         $this->respond(['saved' => true, 'options' => Options::get()]);
     }

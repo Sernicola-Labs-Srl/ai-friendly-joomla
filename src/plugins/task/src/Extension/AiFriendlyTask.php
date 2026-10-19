@@ -17,6 +17,7 @@ use Joomla\Component\Scheduler\Administrator\Traits\TaskPluginTrait;
 use Joomla\Event\SubscriberInterface;
 use Sernicola\Library\AiFriendly\Service\Factory as AiFactory;
 use Sernicola\Library\AiFriendly\Service\Regenerator;
+use Sernicola\Library\AiFriendly\Service\RegenerationJob;
 use Sernicola\Library\AiFriendly\Support\Options;
 
 final class AiFriendlyTask extends CMSPlugin implements SubscriberInterface
@@ -44,6 +45,18 @@ final class AiFriendlyTask extends CMSPlugin implements SubscriberInterface
     private function regenerate(ExecuteTaskEvent $event): int
     {
         $options = Options::get();
+        $jobs = RegenerationJob::create();
+        $job = $jobs->status();
+        if ($job['status'] === 'running') {
+            $job = $jobs->step();
+            $this->logTask('AI Friendly job: ' . json_encode($job, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            return $job['status'] === 'failed' ? Status::KNOCKOUT : Status::OK;
+        }
+        if (!empty($options['llms_full_dirty']) || !empty($job['dirty'])) {
+            $job = $jobs->start(false, 'scheduler_refresh');
+            if ($job['status'] === 'running') $job = $jobs->step();
+            return $job['status'] === 'failed' ? Status::KNOCKOUT : Status::OK;
+        }
         if (empty($options['auto_regenerate']) || empty($options['static_md_files'])) return Status::NO_RUN;
         $params = $event->getArgument('params');
         $limit = max(1, (int) ($params->batch_size ?? $options['regenerate_batch_size'] ?? 100));

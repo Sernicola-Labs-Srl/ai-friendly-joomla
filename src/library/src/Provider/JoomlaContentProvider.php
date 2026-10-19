@@ -118,12 +118,18 @@ final class JoomlaContentProvider implements ContentProviderInterface
 
     public function count(array $filters = []): int
     {
-        $query = $this->db->getQuery(true)
-            ->select('COUNT(*)')
-            ->from($this->db->quoteName('#__content', 'a'))
-            ->where($this->db->quoteName('a.state') . ' = 1');
+        $query = $this->baseQuery()->clear('select')->select('COUNT(*)');
         if (!empty($filters['language'])) {
             $query->where($this->db->quoteName('a.language') . ' IN (' . $this->db->quote($filters['language']) . ', ' . $this->db->quote('*') . ')');
+        }
+        if (!empty($filters['search'])) {
+            $query->where($this->db->quoteName('a.title') . ' LIKE ' . $this->db->quote('%' . $filters['search'] . '%'));
+        }
+        if (!empty($filters['category_id'])) {
+            $query->where($this->db->quoteName('a.catid') . ' = ' . (int) $filters['category_id']);
+        }
+        if (!empty($filters['category_ids']) && is_array($filters['category_ids'])) {
+            $query->where($this->db->quoteName('a.catid') . ' IN (' . implode(',', array_map('intval', $filters['category_ids'])) . ')');
         }
 
         return (int) $this->db->setQuery($query)->loadResult();
@@ -175,7 +181,7 @@ final class JoomlaContentProvider implements ContentProviderInterface
         if ($fields !== '') {
             $body .= "\n\n" . $fields;
         }
-        $groups = Factory::getApplication()->getIdentity()->getAuthorisedViewLevels();
+        $groups = \Sernicola\Library\AiFriendly\Support\ViewLevels::current();
         $attribs = json_decode((string) ($article->attribs ?? ''), true) ?: [];
         $metadata = json_decode((string) ($article->metadata ?? ''), true) ?: [];
 
@@ -189,6 +195,7 @@ final class JoomlaContentProvider implements ContentProviderInterface
                 'date' => substr((string) ($article->publish_up ?: $article->created), 0, 10),
                 'modified' => substr((string) ($article->modified ?: $article->created), 0, 10),
                 'author' => (string) ($article->author_name ?? ''),
+                'access_level' => (int) $article->access,
                 'category' => (string) ($article->category_title ?? ''),
                 'tags' => array_column($tags, 'title'),
                 'noindex' => $this->isNoindex($metadata, $attribs, (int) $article->catid),
@@ -311,6 +318,7 @@ final class JoomlaContentProvider implements ContentProviderInterface
 
     private function customFields(int $articleId): string
     {
+        $guestLevels = array_map('intval', \Joomla\CMS\Access\Access::getAuthorisedViewLevels(0));
         $query = $this->db->getQuery(true)
             ->select(['f.title', 'v.value'])
             ->from($this->db->quoteName('#__fields_values', 'v'))
@@ -318,6 +326,7 @@ final class JoomlaContentProvider implements ContentProviderInterface
             ->where($this->db->quoteName('v.item_id') . ' = ' . $articleId)
             ->where($this->db->quoteName('f.context') . ' = ' . $this->db->quote('com_content.article'))
             ->where($this->db->quoteName('f.state') . ' = 1')
+            ->where($this->db->quoteName('f.access') . ' IN (' . implode(',', $guestLevels ?: [0]) . ')')
             ->order($this->db->quoteName('f.ordering'));
         $rows = $this->db->setQuery($query)->loadObjectList() ?: [];
         $output = [];

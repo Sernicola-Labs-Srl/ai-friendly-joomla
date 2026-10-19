@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.0
+
+- La rigenerazione completa usa un job persistente e riprendibile, con coda stabile dei contenuti, avanzamento nel Hub e tempi distinti per query, generazione, pulizia e indice.
+- `/llms-full.txt` opzionale pubblica il corpus Markdown pubblico solo dopo un passaggio completo riuscito; un file esterno o modificato non viene sovrascritto.
+- La modifica del nome di un autore aggiorna i suoi Markdown a blocchi e invalida la cache. L'indice `/llms.txt` decodifica le entità HTML.
+- Le regole Schema supportano `Service` e FAQ da Custom Fields numerati; i fondatori accettano un URL profilo e gli eventi riutilizzano il Place configurato.
+
 ## 2.4.1
 
 - Il pacchetto ora si chiama "AI Friendly" in Gestione estensioni, come la scheda della Joomla Extensions Directory, il componente e i plugin. Nient'altro cambia.
