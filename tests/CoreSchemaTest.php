@@ -90,4 +90,14 @@ final class CoreSchemaTest extends TestCase
 
         $this->assertSame($once, $twice);
     }
+
+    public function testMediaUrlsBecomeAbsoluteAndLoseJoomlaImageFragment(): void
+    {
+        $graph = [['@type' => 'Article', 'thumbnailUrl' => 'images/photo.jpg#joomlaImage://x',
+            'image' => ['@type' => 'ImageObject', 'url' => '/images/photo.jpg', 'contentUrl' => 'images/photo.jpg']]];
+        $result = CoreSchema::absoluteMedia($graph, self::HOME);
+        $this->assertSame(self::HOME . 'images/photo.jpg', $result[0]['thumbnailUrl']);
+        $this->assertSame(self::HOME . 'images/photo.jpg', $result[0]['image']['url']);
+        $this->assertSame(self::HOME . 'images/photo.jpg', $result[0]['image']['contentUrl']);
+    }
 }

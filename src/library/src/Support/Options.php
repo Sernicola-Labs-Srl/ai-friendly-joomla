@@ -54,6 +54,8 @@ final class Options
             'schema_extra_types' => '', 'schema_telephone' => '', 'schema_price_range' => '',
             'schema_opening_hours' => '', 'schema_geo_latitude' => '', 'schema_geo_longitude' => '',
             'schema_has_map' => '', 'schema_search_url' => '', 'schema_page_rules' => '',
+            'schema_generic_descriptions' => '', 'schema_timezone' => '',
+            'schema_event_places' => '', 'schema_course_mode' => 'onsite',
         ];
     }
 

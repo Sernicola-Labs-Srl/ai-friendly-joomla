@@ -102,7 +102,7 @@ final class Regenerator
         }
 
         // A provider failing mid-walk would look like "nothing belongs here".
-        if ($seen < $total) {
+        if ($seen + $this->registry->skippedRows() < $total) {
             return ['deleted' => 0, 'kept' => 0, 'skipped' => true, 'reason' => 'incomplete scan of the catalogue'];
         }
 

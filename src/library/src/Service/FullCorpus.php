@@ -5,6 +5,7 @@ namespace Sernicola\Library\AiFriendly\Service;
 defined('_JEXEC') or die;
 
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
+use Sernicola\Library\AiFriendly\Support\Path;
 
 /** Publishes a complete corpus without replacing a file owned by somebody else. */
 final class FullCorpus
@@ -29,7 +30,7 @@ final class FullCorpus
 
     public static function append(string $temporary, ContentItem $item, string $markdown): void
     {
-        $entry = "\n\n---\n\nSource: " . html_entity_decode($item->canonicalUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8') . "\n\n" . trim($markdown) . "\n";
+        $entry = "\n\n---\n\nSource: " . Path::publicUrl($item->canonicalUrl) . "\n\n" . trim($markdown) . "\n";
         if (file_put_contents($temporary, $entry, FILE_APPEND | LOCK_EX) !== strlen($entry)) {
             throw new \RuntimeException('Could not append to the full corpus.');
         }

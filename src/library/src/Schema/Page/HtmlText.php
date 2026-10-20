@@ -29,6 +29,21 @@ final class HtmlText
         return trim((string) preg_replace('/\s+/u', ' ', $text));
     }
 
+    /** A complete, readable short description from article introduction HTML. */
+    public static function schemaExcerpt(string $html, int $limit = 160): string
+    {
+        $html = preg_replace('/^\s*(?:<h[1-3]\b[^>]*>.*?<\/h[1-3]>\s*)+/isu', '', $html) ?? $html;
+        $html = preg_replace('/<a\b[^>]*>\s*Torna\s+al?\b.*?<\/a>/isu', '', $html) ?? $html;
+        $html = preg_replace('/^\s*(?:<p\b[^>]*>\s*[\p{Lu}\p{N}\s\p{P}]{4,}\s*<\/p>\s*)+/u', '', $html) ?? $html;
+        $text = self::plain($html);
+        $text = preg_replace('/^Torna\s+al?\s+[^.!?]+[.!?]?\s*/iu', '', $text) ?? $text;
+        if (mb_strlen($text) <= $limit) return $text;
+        $part = mb_substr($text, 0, $limit);
+        if (preg_match('/^(.+[.!?])(?:\s|$)/us', $part, $match)) return trim($match[1]);
+        $part = preg_replace('/\s+\S*$/u', '', $part) ?? $part;
+        return rtrim($part, " \t\n\r\0\x0B,;:");
+    }
+
     /**
      * Keeps basic formatting and links, drops everything else, and makes
      * relative links absolute so the text still works outside the site.

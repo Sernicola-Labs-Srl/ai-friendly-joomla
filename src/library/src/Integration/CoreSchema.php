@@ -10,6 +10,7 @@ namespace Sernicola\Library\AiFriendly\Integration;
 
 defined('_JEXEC') or die;
 
+use Joomla\CMS\Factory;
 use Joomla\CMS\Uri\Uri;
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
 use Sernicola\Library\AiFriendly\Schema\ListingSchema;
@@ -48,15 +49,33 @@ final class CoreSchema
         }
 
         $home = rtrim(Uri::root(), '/') . '/';
+        $options['site_home'] = $home;
+        $options['site_language'] = Factory::getApplication()->getLanguage()->getTag();
+        $options['site_meta_description'] = (string) Factory::getApplication()->get('MetaDesc', '');
+        if (empty($options['schema_timezone'])) $options['schema_timezone'] = (string) Factory::getApplication()->get('offset', 'Europe/Rome');
         $graph = self::merge($graph, (new SchemaBuilder($options))->graph(), $home);
 
-        if ($item === null || $categoryIds === null || $raw === null || trim((string) ($options['schema_page_rules'] ?? '')) === '') {
-            return $graph;
+        // Joomla's base WebPage id is shared by every URL. Give the current
+        // page its own identity before page rules add their entities.
+        $pageKey = self::find($graph, '#/schema/WebPage/base');
+        if ($pageKey !== null) {
+            $oldId = (string) $graph[$pageKey]['@id'];
+            $url = (string) ($graph[$pageKey]['url'] ?? $item?->canonicalUrl ?? Uri::current());
+            $url = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $url = substr($url, 0, strcspn($url, '?#'));
+            if ($url !== '') {
+                $graph = self::remap($graph, [$oldId => $url . '#webpage']);
+            }
         }
 
-        $rule = PageSchema::match(PageSchema::rules((string) $options['schema_page_rules']), (int) $item->id, $categoryIds());
+        if ($item !== null && $categoryIds !== null && $raw !== null && trim((string) ($options['schema_page_rules'] ?? '')) !== '') {
+            $rule = PageSchema::match(PageSchema::rules((string) $options['schema_page_rules']), (int) $item->id, $categoryIds());
+            if ($rule !== null) {
+                $graph = PageSchema::apply($graph, $item, $rule, $home, $raw, $options);
+            }
+        }
 
-        return $rule === null ? $graph : PageSchema::apply($graph, $item, $rule, $home, $raw);
+        return self::absoluteMedia($graph, $home);
     }
 
     /**
@@ -155,7 +174,7 @@ final class CoreSchema
     }
 
     /** Rewrites every `@id` that names one of our provisional ids, wherever it appears. */
-    private static function remap(array $value, array $map): array
+    public static function remap(array $value, array $map): array
     {
         foreach ($value as $key => $item) {
             if ($key === '@id' && is_string($item) && isset($map[$item])) {
@@ -166,6 +185,28 @@ final class CoreSchema
         }
 
         return $value;
+    }
+
+    /** Convert media properties supplied by Joomla or another graph builder. */
+    public static function absoluteMedia(array $graph, string $home): array
+    {
+        $walk = static function (array $value) use (&$walk, $home): array {
+            foreach ($value as $key => $item) {
+                if (is_array($item)) {
+                    $value[$key] = $walk($item);
+                } elseif (is_string($item) && in_array($key, ['thumbnailUrl', 'image', 'url', 'logo', 'contentUrl'], true)) {
+                    // A bare url is only media when it belongs to an ImageObject.
+                    if ($key === 'url' && !in_array('ImageObject', (array) ($value['@type'] ?? []), true)) continue;
+                    $item = preg_replace('/#joomlaImage:\/\/.*$/', '', $item) ?? $item;
+                    if ($item !== '' && !preg_match('#^https?://#i', $item) && !preg_match('/^(?:data|javascript|vbscript):/i', $item)) {
+                        $item = str_starts_with($item, '//') ? 'https:' . $item : rtrim($home, '/') . '/' . ltrim($item, '/');
+                    }
+                    $value[$key] = $item;
+                }
+            }
+            return $value;
+        };
+        return $walk($graph);
     }
 
     /**
