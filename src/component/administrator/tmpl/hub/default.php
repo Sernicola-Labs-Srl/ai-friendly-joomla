@@ -76,6 +76,9 @@ $field = static function (array $definition) use ($e, $raw): string {
         $hint = '<small class="aif-hint" id="' . $id . '-hint">' . $e(Text::_($definition['hint'])) . '</small>';
         $aria = ' aria-describedby="' . $id . '-hint"';
     }
+    if ($key === 'schema_founding_date' && preg_match('/-01-01$/', (string) $raw($key))) {
+        $hint .= '<small class="aif-hint">' . $e(Text::_('COM_AIFRIENDLY_SCHEMA_FOUNDING_DATE_WARNING')) . '</small>';
+    }
 
     $control = $type === 'textarea'
         ? '<textarea id="' . $id . '" name="options[' . $key . ']" rows="' . (int) ($definition['rows'] ?? 4) . '"' . $aria . '>' . $e($raw($key)) . '</textarea>'
@@ -104,7 +107,7 @@ $schemaGroups = [
         ['key' => 'schema_job_title', 'label' => 'COM_AIFRIENDLY_SCHEMA_JOB_TITLE'],
         ['key' => 'schema_additional_type', 'label' => 'COM_AIFRIENDLY_SCHEMA_ADDITIONAL_TYPE'],
         ['key' => 'schema_slogan', 'label' => 'COM_AIFRIENDLY_SCHEMA_SLOGAN'],
-        ['key' => 'schema_founding_date', 'label' => 'COM_AIFRIENDLY_SCHEMA_FOUNDING_DATE', 'hint' => 'COM_AIFRIENDLY_SCHEMA_FOUNDING_DATE_HINT', 'attrs' => ' placeholder="2019-04-23"'],
+        ['key' => 'schema_founding_date', 'label' => 'COM_AIFRIENDLY_SCHEMA_FOUNDING_DATE', 'hint' => 'COM_AIFRIENDLY_SCHEMA_FOUNDING_DATE_HINT', 'attrs' => ' placeholder="1999"'],
         ['key' => 'schema_extra_types', 'label' => 'COM_AIFRIENDLY_SCHEMA_EXTRA_TYPES', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_SCHEMA_EXTRA_TYPES_HINT'],
         ['key' => 'schema_search_url', 'label' => 'COM_AIFRIENDLY_SCHEMA_SEARCH_URL', 'type' => 'url', 'hint' => 'COM_AIFRIENDLY_SCHEMA_SEARCH_URL_HINT'],
     ],
@@ -131,6 +134,8 @@ $schemaGroups = [
         ['key' => 'schema_founders', 'label' => 'COM_AIFRIENDLY_SCHEMA_FOUNDERS', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_SCHEMA_FOUNDERS_HINT'],
         ['key' => 'schema_services', 'label' => 'COM_AIFRIENDLY_SCHEMA_SERVICES', 'type' => 'textarea', 'rows' => 6, 'hint' => 'COM_AIFRIENDLY_SCHEMA_SERVICES_HINT'],
         ['key' => 'schema_page_rules', 'label' => 'COM_AIFRIENDLY_SCHEMA_PAGE_RULES', 'type' => 'textarea', 'rows' => 8, 'hint' => 'COM_AIFRIENDLY_SCHEMA_PAGE_RULES_HINT'],
+        ['key' => 'schema_generic_descriptions', 'label' => 'COM_AIFRIENDLY_SCHEMA_GENERIC_DESCRIPTIONS', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_ONE_PER_LINE'],
+        ['key' => 'schema_event_places', 'label' => 'COM_AIFRIENDLY_SCHEMA_EVENT_PLACES', 'type' => 'textarea', 'rows' => 5, 'hint' => 'COM_AIFRIENDLY_SCHEMA_EVENT_PLACES_HINT'],
     ],
     'COM_AIFRIENDLY_SCHEMA_GROUP_ADDRESS' => [
         ['key' => 'schema_street_address', 'label' => 'COM_AIFRIENDLY_SCHEMA_STREET_ADDRESS'],
@@ -143,6 +148,8 @@ $schemaGroups = [
         ['key' => 'schema_geo_latitude', 'label' => 'COM_AIFRIENDLY_SCHEMA_GEO_LATITUDE'],
         ['key' => 'schema_geo_longitude', 'label' => 'COM_AIFRIENDLY_SCHEMA_GEO_LONGITUDE'],
         ['key' => 'schema_has_map', 'label' => 'COM_AIFRIENDLY_SCHEMA_HAS_MAP', 'type' => 'url'],
+        ['key' => 'schema_timezone', 'label' => 'COM_AIFRIENDLY_SCHEMA_TIMEZONE'],
+        ['key' => 'schema_course_mode', 'label' => 'COM_AIFRIENDLY_SCHEMA_COURSE_MODE'],
         ['key' => 'schema_opening_hours', 'label' => 'COM_AIFRIENDLY_SCHEMA_OPENING_HOURS', 'type' => 'textarea', 'hint' => 'COM_AIFRIENDLY_SCHEMA_OPENING_HOURS_HINT'],
     ],
     'COM_AIFRIENDLY_SCHEMA_GROUP_CONTACT' => [

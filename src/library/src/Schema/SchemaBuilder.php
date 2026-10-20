@@ -16,6 +16,7 @@ use Joomla\Event\Event;
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
 use Sernicola\Library\AiFriendly\Support\EventNames;
 use Sernicola\Library\AiFriendly\Support\Lang;
+use Sernicola\Library\AiFriendly\Support\Path;
 
 final class SchemaBuilder
 {
@@ -40,7 +41,10 @@ final class SchemaBuilder
             'alternateName' => $this->options['schema_alternate_name'] ?? '',
             'description' => $this->options['schema_description'] ?? '',
             'disambiguatingDescription' => $this->options['schema_disambiguating_description'] ?? '',
-            'sameAs' => $this->lines('schema_same_as', true),
+            'sameAs' => array_values(array_filter($this->lines('schema_same_as', true), function (string $url): bool {
+                $map = trim((string) ($this->options['schema_has_map'] ?? ''));
+                return rtrim($url, '/') !== rtrim($map, '/') && !preg_match('#^https?://(?:(?:www\.)?google\.[^/]+/maps|maps\.google\.[^/]+)(?:[/?#]|$)#i', $url);
+            })),
             'knowsAbout' => $this->lines('schema_knows_about'),
             'knowsLanguage' => $this->lines('schema_knows_language'),
             'image' => ($this->options['schema_image_url'] ?? '') ? ['@type' => 'ImageObject', '@id' => $home . '#identity-image', 'url' => $this->options['schema_image_url']] : null,
@@ -103,8 +107,8 @@ final class SchemaBuilder
         if ($item) {
             $graph[] = [
                 '@type' => $item->type === 'article' ? 'Article' : 'WebPage',
-                '@id' => $item->canonicalUrl . '#webpage',
-                'url' => $item->canonicalUrl,
+                '@id' => Path::publicUrl($item->canonicalUrl) . '#webpage',
+                'url' => Path::publicUrl($item->canonicalUrl),
                 'name' => $item->title,
                 'description' => $item->metadata['description'] ?? $item->excerpt,
                 'isPartOf' => ['@id' => $websiteId],
@@ -161,7 +165,8 @@ final class SchemaBuilder
 
     private function lines(string $key, bool $urls = false): array
     {
-        $lines = preg_split('/\R/u', (string) ($this->options[$key] ?? '')) ?: [];
+        $separator = in_array($key, ['schema_contact_languages', 'schema_knows_language', 'schema_area_served', 'schema_extra_types'], true) ? '/[\r\n,]+/u' : '/\R/u';
+        $lines = preg_split($separator, (string) ($this->options[$key] ?? '')) ?: [];
         $values = array_values(array_filter(array_map('trim', $lines), static fn (string $line): bool => $line !== '' && (!$urls || filter_var($line, FILTER_VALIDATE_URL))));
         if ($urls) {
             $seen = [];

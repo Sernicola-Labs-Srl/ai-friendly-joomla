@@ -38,7 +38,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.5.0';
+    private const VERSION = '2.6.0';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;
@@ -321,7 +321,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
         }
         $this->respond(200, 'text/markdown; charset=UTF-8', $markdown, [
             'X-Content-Type-Options' => 'nosniff', 'X-Robots-Tag' => 'noindex, follow',
-            'Link' => '<' . $item->canonicalUrl . '>; rel="canonical"',
+            'Link' => '<' . Path::publicUrl($item->canonicalUrl) . '>; rel="canonical"',
             'X-AI-Friendly-Source' => $source, 'X-AI-Friendly-Version' => self::VERSION,
             'X-AI-Friendly-MD-Length' => (string) strlen($markdown),
             'X-AI-Friendly-Debug-Requested' => $debugRequested ? '1' : '0',
@@ -436,7 +436,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
                 $ids = $this->categoryBranch($categoryId);
                 foreach ((new JoomlaContentProvider())->list(['category_ids' => $ids, 'language' => $app->getLanguage()->getTag()], ListingSchema::LIMIT) as $item) {
                     if (!$item->accessible || !$item->published || !empty($item->metadata['noindex'])) continue;
-                    $items[] = ['url' => $item->canonicalUrl, 'name' => $item->title];
+                    $items[] = ['url' => Path::publicUrl($item->canonicalUrl), 'name' => $item->title];
                 }
             }
             $graph = CoreSchema::listing([

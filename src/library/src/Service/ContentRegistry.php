@@ -72,6 +72,12 @@ final class ContentRegistry
         }
     }
 
+    /** Rows the providers counted but left out of the last walk, as they have nothing to publish. */
+    public function skippedRows(): int
+    {
+        return array_sum(array_map(static fn (ContentProviderInterface $provider): int => method_exists($provider, 'skipped') ? $provider->skipped() : 0, $this->providers));
+    }
+
     public function count(array $filters = []): int
     {
         return array_sum(array_map(static fn (ContentProviderInterface $provider): int => $provider->count($filters), $this->providers));

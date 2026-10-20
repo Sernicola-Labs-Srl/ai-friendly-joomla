@@ -85,7 +85,7 @@ public function collect(EventInterface $event): void
 
 ## Distribuzione
 
-Le release sono pubblicate come pacchetti ZIP su [GitHub Releases](https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/releases). Il pacchetto dichiara un update server (`update.xml` sul branch `main`): Joomla propone le nuove versioni da **Sistema → Aggiorna → Estensioni**. La prima release che lo include va installata a mano.
+AI Friendly è presente nella [Joomla Extensions Directory](https://extensions.joomla.org/extension/site-management/seo-a-metadata/ai-friendly/). Le release sono pubblicate come pacchetti ZIP su [GitHub Releases](https://github.com/Sernicola-Labs-Srl/ai-friendly-joomla/releases). Il pacchetto dichiara un update server (`update.xml` sul branch `main`): Joomla propone le nuove versioni da **Sistema → Aggiorna → Estensioni**. La prima release che lo include va installata a mano.
 
 ## Privacy e servizi esterni
 

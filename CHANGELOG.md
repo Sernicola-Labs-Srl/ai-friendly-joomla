@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.6.0
+
+- Joomla core schema pages now have URL-specific WebPage IDs and one page node. Article pages keep their Article entity; other rules attach their data to the WebPage.
+- Descriptions prefer article metadata, then a specific page description from 4SEO, then a cleaned sentence from the introduction. Configured generic descriptions are excluded.
+- Image URLs are absolute. Timed events include the configured time zone and may use custom venue fields or named venue rules. Course, teacher, program, collection and music event schemas accept richer page rules and custom fields.
+- Organization language lists accept commas, and Google Maps URLs are excluded from sameAs when used as hasMap. The Hub explains partial founding dates.
+- The release includes the previously unreleased routing and regeneration fixes listed below.
+
+- Published addresses no longer carry Joomla's `lang=*` routing hint: the items of listing pages (for example a glossary) in the CollectionPage schema, the `url` in the front matter of `.md` pages, the canonical `Link` header, the page node when AI Friendly writes it, and the sources in `/llms-full.txt`. Other query parameters are kept.
+- A complete regeneration no longer fails at the cleanup step on a site that has published tags with no entries and no description: those tags are not pages, and the scan now accounts for them instead of reporting an incomplete catalogue. Until now such a run ended as failed and `/llms-full.txt` was never published.
+
 ## 2.5.0
 
 - Full regeneration now runs as a persistent, resumable job with a fixed content queue, bounded steps, progress in the Hub, and separate timing for queries, generation, cleanup and index construction.

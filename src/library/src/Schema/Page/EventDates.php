@@ -29,7 +29,7 @@ final class EventDates
     /**
      * @return array{start:string, end:?string}|null Dates as ISO strings; start carries the time when the text gives one.
      */
-    public static function parse(string $plainText, ?int $yearHint = null): ?array
+    public static function parse(string $plainText, ?int $yearHint = null, string $timezone = 'Europe/Rome'): ?array
     {
         $text = mb_substr($plainText, 0, 3000);
         $months = implode('|', array_keys(self::MONTHS));
@@ -62,7 +62,17 @@ final class EventDates
 
         if (preg_match('/ore\s*(\d{1,2})[:.](\d{2})/iu', $window, $time)
             || preg_match('/ore\s*(\d{1,2})[:.](\d{2})/iu', $text, $time)) {
-            $start .= sprintf('T%02d:%02d', (int) $time[1], (int) $time[2]);
+            try {
+                $zone = new \DateTimeZone($timezone);
+            } catch (\Exception) {
+                $zone = new \DateTimeZone('UTC');
+            }
+            try {
+                $date = new \DateTimeImmutable($start . sprintf(' %02d:%02d', (int) $time[1], (int) $time[2]), $zone);
+                $start = $date->format('Y-m-d\TH:i:sP');
+            } catch (\Exception) {
+                // Keep the date-only value when the time itself is invalid.
+            }
         }
 
         $end = null;

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.6.0
+
+- Le pagine dello schema core hanno un ID WebPage specifico per URL e un solo nodo pagina. Gli articoli di notizie conservano l'entità Article; le altre regole arricchiscono il WebPage.
+- Le descrizioni usano prima i metadati dell'articolo, poi la descrizione specifica di 4SEO, poi una frase pulita dall'introduzione. Le descrizioni generiche configurate sono escluse.
+- Gli URL delle immagini diventano assoluti. Gli eventi con orario includono il fuso e possono usare campi luogo o regole per le sedi. Corsi, docenti, programmi, raccolte e concerti supportano regole e campi più ricchi.
+- Gli elenchi di lingue accettano virgole; Google Maps non viene duplicato in sameAs quando è hasMap. Il Hub spiega le date di fondazione parziali.
+- La release include le correzioni di routing e rigenerazione non ancora pubblicate, elencate qui sotto.
+
+- Gli indirizzi pubblicati non portano più il suggerimento di routing `lang=*` di Joomla: le voci delle pagine elenco (per esempio un glossario) nello schema CollectionPage, l'`url` nell'intestazione delle pagine `.md`, l'header `Link` canonico, il nodo pagina quando lo scrive AI Friendly e le fonti di `/llms-full.txt`. Gli altri parametri dell'indirizzo restano.
+- Una rigenerazione completa non fallisce più nella fase di pulizia su un sito con tag pubblicati senza contenuti né descrizione: quei tag non sono pagine e la scansione ora li considera, invece di segnalare un catalogo incompleto. Finora un'esecuzione così finiva in errore e `/llms-full.txt` non veniva mai pubblicato.
+
 ## 2.5.0
 
 - La rigenerazione completa usa un job persistente e riprendibile, con coda stabile dei contenuti, avanzamento nel Hub e tempi distinti per query, generazione, pulizia e indice.

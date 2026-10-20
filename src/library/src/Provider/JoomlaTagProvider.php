@@ -33,6 +33,9 @@ final class JoomlaTagProvider implements ContentProviderInterface
 
     private $db;
 
+    /** Rows the last list() left out because the tag has nothing to publish. */
+    private int $skipped = 0;
+
     public function __construct()
     {
         $this->db = Factory::getContainer()->get('DatabaseDriver');
@@ -41,6 +44,12 @@ final class JoomlaTagProvider implements ContentProviderInterface
     public function name(): string
     {
         return 'tag';
+    }
+
+    /** count() counts rows, list() leaves out the tags without entries or description. */
+    public function skipped(): int
+    {
+        return $this->skipped;
     }
 
     public function list(array $filters = [], int $limit = 100, int $offset = 0): iterable
@@ -55,10 +64,13 @@ final class JoomlaTagProvider implements ContentProviderInterface
         }
 
         $query->order($this->db->quoteName('a.lft') . ' ASC');
+        $this->skipped = 0;
 
         foreach ($this->db->setQuery($query, max(0, $offset), max(1, $limit))->loadObjectList() ?: [] as $row) {
             if ($item = $this->hydrate($row)) {
                 yield $item;
+            } else {
+                $this->skipped++;
             }
         }
     }

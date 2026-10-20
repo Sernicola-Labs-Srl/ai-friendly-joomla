@@ -75,6 +75,30 @@ final class Path
         return (string) preg_replace('#\.html?$#i', '', $alias);
     }
 
+    /**
+     * The address to publish for a page: Joomla's route for an item carries
+     * `lang=*` (or the language tag), which is a routing hint and not part of
+     * the address a visitor uses. Other query parameters are kept, because on a
+     * site without friendly URLs they identify the page.
+     */
+    public static function publicUrl(string $url): string
+    {
+        $url = html_entity_decode($url, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $hash = strpos($url, '#');
+        $fragment = $hash === false ? '' : substr($url, $hash);
+        $base = $hash === false ? $url : substr($url, 0, $hash);
+        $mark = strpos($base, '?');
+        if ($mark === false) {
+            return $url;
+        }
+
+        parse_str(substr($base, $mark + 1), $query);
+        unset($query['lang']);
+        $base = substr($base, 0, $mark);
+
+        return $base . ($query ? '?' . http_build_query($query) : '') . $fragment;
+    }
+
     public static function markdownUrl(string $canonical): string
     {
         $parts = parse_url($canonical);

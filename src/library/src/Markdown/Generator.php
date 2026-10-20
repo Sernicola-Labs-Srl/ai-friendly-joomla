@@ -16,6 +16,7 @@ use Joomla\Event\Event;
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
 use Sernicola\Library\AiFriendly\Support\EventNames;
 use Sernicola\Library\AiFriendly\Support\Lang;
+use Sernicola\Library\AiFriendly\Support\Path;
 
 final class Generator
 {
@@ -53,7 +54,7 @@ final class Generator
     {
         $meta = array_merge($item->metadata, [
             'title' => $item->title,
-            'url' => $item->canonicalUrl,
+            'url' => Path::publicUrl($item->canonicalUrl),
             'language' => $item->language,
             'modified' => $item->modified,
         ]);

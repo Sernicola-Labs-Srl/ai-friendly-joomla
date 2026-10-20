@@ -18,6 +18,15 @@ final class PathTest extends TestCase
         self::assertSame('/', Path::withoutMarkdownSuffix('/index.html.md'));
     }
 
+    public function testPublicUrlDropsOnlyTheLanguageHint(): void
+    {
+        self::assertSame('https://example.test/t/tono.html', Path::publicUrl('https://example.test/t/tono.html?lang=*'));
+        self::assertSame('https://example.test/t/tono.html', Path::publicUrl('https://example.test/t/tono.html?lang=it-IT'));
+        self::assertSame('https://example.test/t/tono.html', Path::publicUrl('https://example.test/t/tono.html?lang=*'));
+        self::assertSame('https://example.test/index.php?id=4', Path::publicUrl('https://example.test/index.php?id=4&amp;lang=*'));
+        self::assertSame('https://example.test/news/', Path::publicUrl('https://example.test/news/'));
+    }
+
     public function testBuildsMarkdownUrl(): void
     {
         self::assertSame('https://example.test/news.md', Path::markdownUrl('https://example.test/news/'));
