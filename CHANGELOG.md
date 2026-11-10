@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.1
+
+- Fixed an invalid regular expression in the `sameAs` filter that raised `preg_match(): Unknown modifier ']'` on every call. Google Maps URLs are now correctly excluded from `sameAs`, and the PHP error log no longer fills with warnings.
+
 ## 2.6.0
 
 - Joomla core schema pages now have URL-specific WebPage IDs and one page node. Article pages keep their Article entity; other rules attach their data to the WebPage.

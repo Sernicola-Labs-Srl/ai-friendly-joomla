@@ -38,7 +38,7 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.6.0';
+    private const VERSION = '2.6.1';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;

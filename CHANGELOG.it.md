@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.1
+
+- Corretta un'espressione regolare non valida nel filtro `sameAs`, che a ogni chiamata generava `preg_match(): Unknown modifier ']'`. Gli URL di Google Maps ora vengono esclusi correttamente da `sameAs` e il log errori PHP non si riempie più di warning.
+
 ## 2.6.0
 
 - Le pagine dello schema core hanno un ID WebPage specifico per URL e un solo nodo pagina. Gli articoli di notizie conservano l'entità Article; le altre regole arricchiscono il WebPage.
