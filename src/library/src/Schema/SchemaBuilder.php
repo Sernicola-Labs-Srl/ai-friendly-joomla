@@ -43,7 +43,7 @@ final class SchemaBuilder
             'disambiguatingDescription' => $this->options['schema_disambiguating_description'] ?? '',
             'sameAs' => array_values(array_filter($this->lines('schema_same_as', true), function (string $url): bool {
                 $map = trim((string) ($this->options['schema_has_map'] ?? ''));
-                return rtrim($url, '/') !== rtrim($map, '/') && !preg_match('#^https?://(?:(?:www\.)?google\.[^/]+/maps|maps\.google\.[^/]+)(?:[/?#]|$)#i', $url);
+                return rtrim($url, '/') !== rtrim($map, '/') && !preg_match('~^https?://(?:(?:www\.)?google\.[^/]+/maps|maps\.google\.[^/]+)(?:[/?#]|$)~i', $url);
             })),
             'knowsAbout' => $this->lines('schema_knows_about'),
             'knowsLanguage' => $this->lines('schema_knows_language'),
