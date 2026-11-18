@@ -26,5 +26,11 @@ final class ConverterTest extends TestCase
         $markdown = (new Converter())->convert('<script>alert(1)</script><p>Keep</p><a href="/more">Read more</a>');
         self::assertSame('Keep', $markdown);
     }
-}
 
+    public function testHeadingKeepsWordsApartAtLineBreaks(): void
+    {
+        $markdown = (new Converter(false))->convert('<h1><strong>CLUSTER</strong><br />GRAPPOLO<br><strong>GRUPPO</strong></h1><p><a href="https://example.test/x"><strong>Uno</strong><br>Due</a></p>');
+        self::assertStringContainsString('# CLUSTER GRAPPOLO GRUPPO', $markdown);
+        self::assertStringContainsString('[Uno Due](https://example.test/x)', $markdown);
+    }
+}

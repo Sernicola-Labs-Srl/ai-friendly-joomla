@@ -17,8 +17,11 @@ use Joomla\CMS\Uri\Uri;
 use Joomla\Registry\Registry;
 use Sernicola\Library\AiFriendly\Contract\ContentProviderInterface;
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
+use Sernicola\Library\AiFriendly\Support\Description;
 use Sernicola\Library\AiFriendly\Support\Options;
 use Sernicola\Library\AiFriendly\Support\Path;
+use Sernicola\Library\AiFriendly\Support\PublicUrl;
+use Sernicola\Library\AiFriendly\Support\SeoMeta;
 use Sernicola\Library\AiFriendly\Support\SiteRoute;
 
 final class JoomlaContentProvider implements ContentProviderInterface
@@ -27,6 +30,9 @@ final class JoomlaContentProvider implements ContentProviderInterface
 
     /** @var array<int, array{parent:int, robots:string}>|null Loaded once per instance. */
     private ?array $categories = null;
+
+    /** @var array<string, string>|null Robots setting of menu items, by "view:id". Loaded once per instance. */
+    private ?array $menuRobots = null;
 
     public function __construct()
     {
@@ -80,6 +86,15 @@ final class JoomlaContentProvider implements ContentProviderInterface
         // article's own.
         if ($id = SiteRoute::itemId($path, 'com_content', 'article')) {
             if ($item = $this->find($id, $language)) {
+                return $item;
+            }
+        }
+
+        // A public address kept by a third-party SEF component (forSEF,
+        // sh404SEF) is unknown to Joomla's own router: its table says which
+        // article it belongs to, the old technical address included.
+        if (($id = PublicUrl::idForPath($path)) !== null) {
+            if ($item = $this->find((string) $id, $language)) {
                 return $item;
             }
         }
@@ -166,10 +181,14 @@ final class JoomlaContentProvider implements ContentProviderInterface
 
     private function hydrate(object $article): ?ContentItem
     {
+        // Built with the site router, never the administrator's, whatever
+        // application is running (a regeneration started from the Hub, a task).
         $route = Route::link('site', 'index.php?option=com_content&view=article&id=' . (int) $article->id . '&catid=' . (int) $article->catid . '&lang=' . rawurlencode((string) $article->language), true, Route::TLS_IGNORE, true);
         if (!str_starts_with($route, 'http')) {
             $route = rtrim(Uri::root(), '/') . '/' . ltrim($route, '/');
         }
+        // The address Joomla built may not be the one the site publishes.
+        $route = PublicUrl::forContent('article', (int) $article->id, (string) $article->language, $route);
         $images = json_decode((string) ($article->images ?? ''), true) ?: [];
         $featured = $images['image_fulltext'] ?? $images['image_intro'] ?? '';
         if ($featured !== '' && !str_starts_with($featured, 'http')) {
@@ -188,7 +207,7 @@ final class JoomlaContentProvider implements ContentProviderInterface
         return new ContentItem(
             'joomla', 'article', (string) $article->id, (string) ($article->language ?: '*'),
             (string) $article->title, $route, Path::normalize(parse_url($route, PHP_URL_PATH) ?: '/'), $body,
-            $this->excerpt((string) ($article->metadesc ?: $article->introtext)),
+            $this->describe($article, $route),
             [
                 'description' => (string) ($article->metadesc ?? ''),
                 'featured_image' => $featured,
@@ -198,7 +217,7 @@ final class JoomlaContentProvider implements ContentProviderInterface
                 'access_level' => (int) $article->access,
                 'category' => (string) ($article->category_title ?? ''),
                 'tags' => array_column($tags, 'title'),
-                'noindex' => $this->isNoindex($metadata, $attribs, (int) $article->catid),
+                'noindex' => $this->isNoindex($metadata, $attribs, (int) $article->catid, (int) $article->id),
             ],
             ['category_ids' => [(int) $article->catid], 'tag_ids' => array_map('intval', array_column($tags, 'id'))],
             (string) ($article->modified ?: $article->created), true, in_array((int) $article->access, $groups, true)
@@ -216,7 +235,7 @@ final class JoomlaContentProvider implements ContentProviderInterface
      * to noindex globally would silently produce an empty llms.txt. That case
      * is surfaced as a diagnostic warning instead.
      */
-    private function isNoindex(array $metadata, array $attribs, int $categoryId): bool
+    private function isNoindex(array $metadata, array $attribs, int $categoryId, int $articleId = 0): bool
     {
         $own = strtolower(trim((string) ($metadata['robots'] ?? $attribs['robots'] ?? '')));
 
@@ -224,7 +243,69 @@ final class JoomlaContentProvider implements ContentProviderInterface
             return str_contains($own, 'noindex');
         }
 
+        // A menu item that points straight at the article sets the robots of its page.
+        $menu = $articleId > 0 ? $this->menuRobotsFor('article', $articleId) : '';
+
+        if ($menu !== '') {
+            return str_contains($menu, 'noindex');
+        }
+
         return str_contains($this->categoryRobots($categoryId), 'noindex');
+    }
+
+    /**
+     * Whether the page of a category is not meant for search engines: the
+     * category or an ancestor says noindex, or so does a menu item that points
+     * at the category.
+     */
+    public function categoryIsNoindex(int $categoryId): bool
+    {
+        foreach (['category', 'categories'] as $view) {
+            $menu = $this->menuRobotsFor($view, $categoryId);
+
+            if ($menu !== '') {
+                return str_contains($menu, 'noindex');
+            }
+        }
+
+        return str_contains($this->categoryRobots($categoryId), 'noindex');
+    }
+
+    /**
+     * Robots setting of the first published menu item that links to the view.
+     *
+     * Looked up for every article and category, so the menu is read once.
+     */
+    private function menuRobotsFor(string $view, int $id): string
+    {
+        if ($this->menuRobots === null) {
+            $this->menuRobots = [];
+
+            try {
+                $query = $this->db->getQuery(true)
+                    ->select([$this->db->quoteName('link'), $this->db->quoteName('params')])
+                    ->from($this->db->quoteName('#__menu'))
+                    ->where($this->db->quoteName('client_id') . ' = 0')
+                    ->where($this->db->quoteName('published') . ' = 1')
+                    ->where($this->db->quoteName('link') . ' LIKE ' . $this->db->quote('index.php?option=com_content&view=%'))
+                    ->where($this->db->quoteName('params') . ' LIKE ' . $this->db->quote('%robots%'));
+
+                foreach ($this->db->setQuery($query)->loadObjectList() ?: [] as $row) {
+                    parse_str((string) parse_url(html_entity_decode((string) $row->link), PHP_URL_QUERY), $vars);
+                    $params = json_decode((string) $row->params, true) ?: [];
+                    $robots = strtolower(trim((string) ($params['robots'] ?? '')));
+                    $key = ($vars['view'] ?? '') . ':' . (int) ($vars['id'] ?? 0);
+
+                    if ($robots !== '' && !isset($this->menuRobots[$key])) {
+                        $this->menuRobots[$key] = $robots;
+                    }
+                }
+            } catch (\Throwable) {
+                // Without a readable menu there is nothing to inherit.
+            }
+        }
+
+        return $this->menuRobots[$view . ':' . $id] ?? '';
     }
 
     /**
@@ -260,15 +341,18 @@ final class JoomlaContentProvider implements ContentProviderInterface
     private function loadCategories(): array
     {
         $query = $this->db->getQuery(true)
-            ->select([$this->db->quoteName('id'), $this->db->quoteName('parent_id'), $this->db->quoteName('params')])
+            ->select([$this->db->quoteName('id'), $this->db->quoteName('parent_id'), $this->db->quoteName('metadata'), $this->db->quoteName('params')])
             ->from($this->db->quoteName('#__categories'))
             ->where($this->db->quoteName('extension') . ' = ' . $this->db->quote('com_content'));
 
         $categories = [];
 
         foreach ($this->db->setQuery($query)->loadAssocList() ?: [] as $row) {
+            // Joomla stores a category's robots setting in `metadata`, next to
+            // the author; `params` is only read as a fallback for older data.
+            $metadata = json_decode((string) ($row['metadata'] ?? ''), true) ?: [];
             $params = json_decode((string) ($row['params'] ?? ''), true) ?: [];
-            $robots = strtolower(trim((string) ($params['robots'] ?? '')));
+            $robots = strtolower(trim((string) ($metadata['robots'] ?? $params['robots'] ?? '')));
             $categories[(int) $row['id']] = ['parent' => (int) $row['parent_id'], 'robots' => $robots];
         }
 
@@ -341,10 +425,42 @@ final class JoomlaContentProvider implements ContentProviderInterface
         return implode("\n", $output);
     }
 
-    private function excerpt(string $html, int $limit = 180): string
+    /**
+     * The description shown next to the link in llms.txt.
+     *
+     * The article's own meta description, then the one set in 4SEO, then the
+     * first paragraph of prose; see Description::choose(). A description that
+     * is the site-wide one says nothing about this page and is skipped.
+     */
+    private function describe(object $article, string $url): string
     {
-        $text = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?? '');
-        return mb_strlen($text) > $limit ? mb_substr($text, 0, $limit - 1) . '…' : $text;
+        $options = Options::get();
+        $source = (string) ($options['llms_description_source'] ?? Description::SOURCE_AUTO);
+        $source = in_array($source, Description::SOURCES, true) ? $source : Description::SOURCE_AUTO;
+        $metas = [(string) ($article->metadesc ?? '')];
+
+        if ($source !== Description::SOURCE_TEXT) {
+            $metas[] = SeoMeta::description(Path::publicUrl($url));
+        }
+
+        $generic = preg_split('/\R/u', (string) ($options['schema_generic_descriptions'] ?? '')) ?: [];
+
+        try {
+            $generic[] = (string) Factory::getApplication()->get('MetaDesc', '');
+        } catch (\Throwable) {
+            // No application: nothing to compare with.
+        }
+
+        $skip = preg_split('/\R/u', (string) ($options['llms_description_skip'] ?? '')) ?: [];
+        $limit = max(80, min(500, (int) ($options['llms_description_length'] ?? 200)));
+
+        return Description::choose(
+            $source,
+            $metas,
+            trim((string) ($article->introtext ?? '') . "\n" . (string) ($article->fulltext ?? '')),
+            $generic,
+            $limit,
+            $skip
+        );
     }
 }
-

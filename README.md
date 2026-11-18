@@ -26,6 +26,43 @@ The package installs a shared library, the AI Content Hub administrator componen
 
 Markdown responses are public, carry `X-Robots-Tag: noindex, follow`, and expose diagnostic source/version headers. `?debug=1` adds body diagnostics only for authorised administrators, and is never cached.
 
+### Public addresses
+
+`llms.txt`, `llms-full.txt` and the `url:` of each Markdown file use the address a visitor sees, which is also the page's canonical. The address is built with the **site** router (never the administrator's), whichever application runs the job. A site that publishes other addresses through a third-party SEF component is read from its table, detected at run time:
+
+| Component | Table | Columns used |
+| --- | --- | --- |
+| forSEF | `#__forsef_urls` | `sef`, `nonsef`, `duplicate` (0 = main address) |
+| sh404SEF | `#__sh404sef_urls` | `oldurl`, `newurl`, `rank` (0 = main address) |
+
+4SEO has no router of its own and needs nothing. With none of these installed, or when an item has no row, the address is the one Joomla built: the behaviour of earlier versions. Nothing is required of the site.
+
+The `.md` of a public address is served. A `.md` request that reaches an article by another path, such as the technical `/section/1226-alias.html.md`, answers **301** to `<public address>.md`. Pages that are noindex, unpublished, restricted, excluded, or that two articles share, are not listed.
+
+`tools/verify-llms.mjs` checks all of it from the outside (Node 18+):
+
+```
+node tools/verify-llms.mjs https://www.example.com --json report.json
+```
+
+For each link it reports the status of the `.md` and of the HTML page without following redirects, where a redirecting or missing page ends up, noindex (header or meta tag), a canonical that is not the page's own address, and paths that look technical. The exit status is 1 when anything needs attention.
+
+If forSEF runs before AI Friendly, it may answer a `.md` request before the plugin sees it. Check `curl -I <public address>.md`; on a 404 move **System - AI Friendly** above forSEF in **System → Plugins**.
+
+### Descriptions in llms.txt
+
+The text after each link is chosen, in order, from: the article's meta description; the custom meta description in 4SEO (`#__forseo_custom_meta`, `custom.description`) when 4SEO is installed; the first paragraph of prose of at least 80 characters, cut at the end of a sentence. Headings in capitals, buttons and calls to action ("Book an Open Day") are skipped, and so are YOOtheme Builder layout comments, `<style>`, `<script>` and button CSS. Tags never glue words: `<br>`, the end of a block and adjacent inline elements become spaces. A description equal to the site-wide one (Global Configuration or **Generic descriptions** in Schema) is ignored. In **Rules → Descriptions in llms.txt**:
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| Description of each link (`llms_description_source`) | `auto` | `auto`: meta description, then 4SEO, then text. `meta`: never the text. `text`: never a meta description. |
+| Maximum length (`llms_description_length`) | 200 | 80 to 500 characters. |
+| Further phrases to skip (`llms_description_skip`) | empty | One per line; a paragraph that starts with one is not used. |
+
+### noindex
+
+With **Exclude noindex content** on (the default) an item is left out when its own robots setting says noindex or, failing that, a menu item pointing at it does, or its category or an ancestor does. The `.md` of a noindex category, and of a category with nothing to list in it or below it, answers 404.
+
 ## Administration
 
 Open **Components → AI Friendly**. The Hub includes Overview, Content, Rules, Schema, and Automation sections, plus snapshots, diagnostics, static Markdown regeneration, and a timeline.
@@ -33,6 +70,37 @@ Open **Components → AI Friendly**. The Hub includes Overview, Content, Rules, 
 Full regeneration is a resumable job. The Hub shows its progress and Joomla Scheduled Tasks can continue it after the browser closes. Enable **Publish llms-full.txt** in Automation to write a complete public corpus to the document root; a scheduled task is needed for unattended refreshes. The option starts disabled.
 
 The `Content - AI Friendly` plugin adds the exclusion switch and the last generation date to the article editor.
+
+## Event venues and dates
+
+Pages with the `Event` or `MusicEvent` rule (Schema → Page types) are published with the school as venue unless the event says otherwise. The venue is **optional**. It can come from two places, and a Custom Field of the article takes precedence over the table:
+
+1. **Custom Fields** of the article, by name (create them under Content → Fields, context Article, plain text):
+
+   | Field name | Content |
+   | --- | --- |
+   | `evento_luogo` | Venue name, e.g. `Teatro PIME` |
+   | `evento_indirizzo` | `street \| postal code \| city`, e.g. `Via Mosè Bianchi 94\|20149\|Milano` |
+   | `evento_url` | Venue website, or a Google Maps / OpenStreetMap link (published as `hasMap`) |
+   | `evento_sameas` | One URL per line (Wikipedia, Wikidata...) |
+   | `evento_online` | Address of the live stream: the event is online |
+   | `evento_modalita` | `online`, `mixed` or `offline`, when it is not obvious |
+   | `evento_stato` | `scheduled`, `cancelled`, `postponed`, `rescheduled` or `online` (moved online) |
+   | `evento_fine` | End: `2026-04-11 20:00`, `11/04/2026 20:00`, `2026-04-12` or just `20:00` |
+
+2. The **Event venues** table in Schema, one venue per line, matched by a keyword in the title and then in the first part of the text:
+
+   ```
+   teatro pime ; pime | Teatro PIME | Via Mosè Bianchi 94 | 20149 | Milano | https://www.teatropime.it
+   blue note | Blue Note Milano | Via Borsieri 37 | 20159 | Milano | https://maps.app.goo.gl/...
+   webinar ; streaming | @online | | | | https://meet.example.com/cluster
+   ```
+
+   Several keywords are separated by `;`, unknown parts are left empty, and a venue named `@online` stands for a live stream.
+
+The event is published with a `Place` (name, `PostalAddress`, `url` or `hasMap`, `sameAs`) or, for an online event, a `VirtualLocation`; an event with both has both and `MixedEventAttendanceMode`. With nothing stated, the event keeps the school's `Place` and `OfflineEventAttendanceMode`: nothing is invented. A venue in another city does not borrow the school's country.
+
+`endDate` is read from the page when it states it: a time range ("18:15-20:00", "dalle 18 alle 20", an end after midnight is the next day) or a date range ("dal 2 al 5 luglio"); otherwise from `evento_fine`. A second time that is not a range ("ore 18:15 e ore 21:00") is never taken as an end. `eventStatus` is `EventScheduled` unless `evento_stato` says otherwise or the title says "annullato", "rinviato", "cancelled" or "postponed".
 
 ## 4SEO integration
 

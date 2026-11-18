@@ -35,15 +35,26 @@ final class LlmsBuilder
         $output = $custom !== '' ? $custom . "\n\n" : '# ' . $config->get('sitename', 'Joomla') . "\n> " . ($config->get('MetaDesc') ?: Lang::text('PLG_SYSTEM_AIFRIENDLY_SITE_FALLBACK_DESC', 'Website')) . "\n\n";
         if ($auto || $custom === '') {
             $sections = [];
+            // Two articles can end up at one public address (a duplicate, an
+            // alias): listing it twice only adds a link that redirects.
+            $seen = [];
             $limit = max(1, (int) ($this->options['articles_limit'] ?? 100));
             foreach ($this->registry->all([], $limit) as $item) {
                 if (!$this->rules->allows($item, 'llms')) {
                     continue;
                 }
+                $address = Path::markdownUrl($item->canonicalUrl);
+                // Keyed by the full public URL: on a site without friendly URLs the
+                // query string is what tells the pages apart.
+                $identity = Path::publicUrl($item->canonicalUrl);
+                if (isset($seen[$identity])) {
+                    continue;
+                }
+                $seen[$identity] = true;
                 $heading = $item->type === 'article'
                     ? Lang::text('PLG_SYSTEM_AIFRIENDLY_LLMS_ARTICLES', 'Articles')
                     : Lang::text('PLG_SYSTEM_AIFRIENDLY_LLMS_PAGES', 'Pages');
-                $sections[$heading][] = '- [' . $item->title . '](' . Path::markdownUrl($item->canonicalUrl) . ')' . ($item->excerpt !== '' ? ': ' . $item->excerpt : '');
+                $sections[$heading][] = '- [' . $item->title . '](' . $address . ')' . ($item->excerpt !== '' ? ': ' . $item->excerpt : '');
             }
             foreach ($sections as $heading => $lines) {
                 $output .= '## ' . $heading . "\n" . implode("\n", $lines) . "\n\n";

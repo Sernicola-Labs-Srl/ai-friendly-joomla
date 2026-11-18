@@ -33,12 +33,13 @@ use Sernicola\Library\AiFriendly\Service\ResponseCache;
 use Sernicola\Library\AiFriendly\Support\Lang;
 use Sernicola\Library\AiFriendly\Support\Options;
 use Sernicola\Library\AiFriendly\Support\Path;
+use Sernicola\Library\AiFriendly\Support\PublicUrl;
 
 final class AiFriendly extends CMSPlugin implements SubscriberInterface
 {
     protected $autoloadLanguage = true;
     protected $allowLegacyListeners = false;
-    private const VERSION = '2.6.1';
+    private const VERSION = '2.7.0';
 
     /** Clean path of a .md request handed over to the Joomla router. */
     private ?string $deferred = null;
@@ -302,6 +303,12 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
         // Distinct reason: the content exists but a rule withholds it, which
         // from the outside looks exactly like a path that resolves to nothing.
         if (!$rules->allows($item, 'serve')) $this->notFound('excluded');
+        // One address per page: the technical path of an article, or any other
+        // way in, is sent on to the public one instead of being served twice.
+        if ($item->provider === 'joomla' && in_array(strtoupper((string) $app->getInput()->server->getString('REQUEST_METHOD', 'GET')), ['GET', 'HEAD'], true)) {
+            $target = Path::markdownRedirect($path, $item->canonicalUrl, Path::normalize(Uri::base(true)));
+            if ($target !== null) $this->redirectPermanently($target);
+        }
         $source = 'dynamic';
         $markdown = null;
         if (!empty($options['static_md_files']) && !$debug) {
@@ -369,11 +376,21 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
 
     private function serveCategory(object $category, JoomlaContentProvider $provider, $rules, bool $debugRequested, bool $debug): never
     {
+        // A category the site keeps out of search engines stays out of here too.
+        if (!empty(Options::get()['exclude_noindex']) && $provider->categoryIsNoindex((int) $category->id)) $this->notFound('excluded');
         $lines = ['# ' . $category->title, ''];
         if (!empty($category->description)) $lines[] = trim(strip_tags((string) $category->description)) . "\n";
+        $entries = 0;
         foreach ($provider->list(['category_id' => (int) $category->id, 'language' => (string) $category->language], 100) as $item) {
-            if ($rules->allows($item, 'archive')) $lines[] = '- [' . $item->title . '](' . Path::markdownUrl($item->canonicalUrl) . ')' . ($item->excerpt ? ': ' . $item->excerpt : '');
+            if ($rules->allows($item, 'archive')) {
+                $lines[] = '- [' . $item->title . '](' . Path::markdownUrl($item->canonicalUrl) . ')' . ($item->excerpt ? ': ' . $item->excerpt : '');
+                $entries++;
+            }
         }
+        // A category with nothing to show in it or below it, such as a glossary
+        // letter nobody has written yet, is not a page. A parent whose entries
+        // all live in its subcategories still is.
+        if ($entries === 0 && !$this->branchHasContent($provider, $rules, (int) $category->id)) $this->notFound('empty');
         $body = implode("\n", $lines) . "\n";
         $this->respond(200, 'text/markdown; charset=UTF-8', $body, [
             'X-Content-Type-Options' => 'nosniff', 'X-Robots-Tag' => 'noindex, follow',
@@ -401,7 +418,26 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             true
         );
 
-        return str_starts_with($url, 'http') ? $url : rtrim(Uri::root(), '/') . '/' . ltrim($url, '/');
+        $url = str_starts_with($url, 'http') ? $url : rtrim(Uri::root(), '/') . '/' . ltrim($url, '/');
+
+        return PublicUrl::forContent('category', (int) $category->id, (string) ($category->language ?? '*'), $url);
+    }
+
+    /**
+     * 301 to the Markdown of a page's public address.
+     */
+    private function redirectPermanently(string $url): never
+    {
+        $app = $this->getApplication();
+        http_response_code(301);
+        $app->setHeader('status', '301', true);
+        $app->setHeader('Location', $url, true);
+        $app->setHeader('Cache-Control', 'public, max-age=3600', true);
+        $app->setHeader('X-AI-Friendly-Version', self::VERSION, true);
+        $app->setHeader('X-AI-Friendly-Reason', 'canonical-redirect', true);
+        $app->setHeader('Content-Length', '0', true);
+        $app->sendHeaders();
+        $app->close();
     }
 
     /**
@@ -487,6 +523,15 @@ final class AiFriendly extends CMSPlugin implements SubscriberInterface
             ->where($db->quoteName('c.published') . ' = 1')
             ->bind(':id', $categoryId, \Joomla\Database\ParameterType::INTEGER);
         return array_map('intval', $db->setQuery($query)->loadColumn() ?: [$categoryId]);
+    }
+
+    /** Whether any article the rules allow lives in the category or one of its subcategories. */
+    private function branchHasContent(JoomlaContentProvider $provider, $rules, int $categoryId): bool
+    {
+        foreach ($provider->list(['category_ids' => $this->categoryBranch($categoryId)], 100) as $item) {
+            if ($rules->allows($item, 'archive')) return true;
+        }
+        return false;
     }
 
     private ?\Sernicola\Library\AiFriendly\Dto\ContentItem $current = null;

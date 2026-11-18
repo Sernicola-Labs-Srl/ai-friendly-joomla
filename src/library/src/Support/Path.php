@@ -110,4 +110,44 @@ final class Path
 
         return $origin . $path;
     }
+
+    /**
+     * Where a `.md` request for $requested should be sent, or null to serve it.
+     *
+     * A page has one public address. A request that reaches it by another path
+     * (the technical `/section/1226-alias.html`, a different case, a language
+     * prefix left out) is answered with a permanent redirect to the Markdown of
+     * the public one. The SEF suffix alone is not a difference: `/page` and
+     * `/page.html` have always reached the same document.
+     *
+     * Nothing is redirected when the canonical address carries a query string
+     * (a site without friendly URLs: the path alone does not identify the page)
+     * or when either path is the home page.
+     *
+     * @param string $requested Path asked for, without the `.md` suffix and the site's base path.
+     * @param string $basePath  Folder the site lives in, `/` for the domain root.
+     */
+    public static function markdownRedirect(string $requested, string $canonicalUrl, string $basePath = '/'): ?string
+    {
+        $canonical = self::publicUrl($canonicalUrl);
+
+        if (str_contains($canonical, '?')) {
+            return null;
+        }
+
+        $path = self::normalize((string) (parse_url($canonical, PHP_URL_PATH) ?? '/'));
+        $base = self::normalize($basePath);
+
+        if ($base !== '/' && str_starts_with($path, $base)) {
+            $path = self::normalize(substr($path, strlen($base)) ?: '/');
+        }
+
+        $requested = self::normalize($requested);
+
+        if ($path === '/' || $requested === '/' || self::withoutSefSuffix($path) === self::withoutSefSuffix($requested)) {
+            return null;
+        }
+
+        return self::markdownUrl($canonical);
+    }
 }

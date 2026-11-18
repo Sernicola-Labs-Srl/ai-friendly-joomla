@@ -46,6 +46,10 @@ final class ResponseCache
         'exclude_tags',
         'exclude_url_patterns',
         'exclude_noindex',
+        'llms_description_source',
+        'llms_description_length',
+        'llms_description_skip',
+        'schema_generic_descriptions',
         'author_cache_epoch',
     ];
 

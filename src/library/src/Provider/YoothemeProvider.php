@@ -14,7 +14,10 @@ use Joomla\CMS\Factory;
 use Joomla\CMS\Uri\Uri;
 use Sernicola\Library\AiFriendly\Contract\ContentProviderInterface;
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
+use Sernicola\Library\AiFriendly\Support\Description;
+use Sernicola\Library\AiFriendly\Support\Options;
 use Sernicola\Library\AiFriendly\Support\Path;
+use Sernicola\Library\AiFriendly\Support\SeoMeta;
 
 final class YoothemeProvider implements ContentProviderInterface
 {
@@ -48,8 +51,8 @@ final class YoothemeProvider implements ContentProviderInterface
             }
 
             $html = $this->toHtml($fragments);
-            $plain = $this->toPlainText($fragments);
             $url = rtrim(Uri::root(), '/') . Path::normalize($route);
+            $description = $this->describe($html, $url);
 
             yield new ContentItem(
                 'yootheme',
@@ -60,8 +63,8 @@ final class YoothemeProvider implements ContentProviderInterface
                 $url,
                 Path::normalize($route),
                 $html,
-                $this->excerpt($plain),
-                ['description' => $this->excerpt($plain)],
+                $description,
+                ['description' => $description],
                 [],
                 '',
                 true,
@@ -242,14 +245,6 @@ final class YoothemeProvider implements ContentProviderInterface
     /**
      * @param array<int, array{kind:string, value:string}> $fragments
      */
-    private function toPlainText(array $fragments): string
-    {
-        return trim(implode(' ', array_map(fn (array $f): string => $this->plain($f['value']), $fragments)));
-    }
-
-    /**
-     * @param array<int, array{kind:string, value:string}> $fragments
-     */
     private function title(array $fragments, string $route): string
     {
         foreach ($fragments as $fragment) {
@@ -263,13 +258,35 @@ final class YoothemeProvider implements ContentProviderInterface
 
     private function plain(string $value): string
     {
-        return trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags($value), ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+        return Description::plain($value, false);
     }
 
-    private function excerpt(string $text): string
+    /**
+     * Same choice as for an article: the page's meta description in 4SEO, then
+     * the first paragraph of prose. A builder page has no meta description of
+     * its own in Joomla.
+     */
+    private function describe(string $html, string $url): string
     {
-        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        $options = Options::get();
+        $source = (string) ($options['llms_description_source'] ?? Description::SOURCE_AUTO);
+        $source = in_array($source, Description::SOURCES, true) ? $source : Description::SOURCE_AUTO;
+        $metas = $source === Description::SOURCE_TEXT ? [] : [SeoMeta::description($url)];
+        $generic = preg_split('/\R/u', (string) ($options['schema_generic_descriptions'] ?? '')) ?: [];
 
-        return mb_strlen($text) > 180 ? mb_substr($text, 0, 179) . '…' : $text;
+        try {
+            $generic[] = (string) Factory::getApplication()->get('MetaDesc', '');
+        } catch (\Throwable) {
+            // No application: nothing to compare with.
+        }
+
+        return Description::choose(
+            $source,
+            $metas,
+            $html,
+            $generic,
+            max(80, min(500, (int) ($options['llms_description_length'] ?? 200))),
+            preg_split('/\R/u', (string) ($options['llms_description_skip'] ?? '')) ?: []
+        );
     }
 }

@@ -30,6 +30,10 @@ final class Options
             'exclude_url_patterns' => '', 'exclude_noindex' => 1,
             'include_metadata' => 1, 'normalize_headings' => 1, 'render_content_plugins' => 1,
             'link_to_markdown' => 0,
+            // Where the description next to a link in llms.txt comes from: `auto`
+            // (meta description, then 4SEO, then the first paragraph of prose),
+            // `meta` (never the text) or `text` (never a meta description).
+            'llms_description_source' => 'auto', 'llms_description_length' => 200, 'llms_description_skip' => '',
             // Seconds. 0 keeps every response uncached, which is the safe default
             // for a public endpoint.
             'dynamic_cache_ttl' => 0,

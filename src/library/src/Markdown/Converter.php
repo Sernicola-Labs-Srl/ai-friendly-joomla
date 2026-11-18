@@ -72,10 +72,22 @@ final class Converter
 
         return preg_replace_callback('#<h([1-6])[^>]*>(.*?)</h\1>#si', static function (array $m) use ($shift): string {
             $level = min(6, (int) $m[1] + $shift);
-            $text = trim(strip_tags($m[2]));
+            $text = self::flatten($m[2]);
 
             return $text === '' ? '' : "\n\n" . str_repeat('#', $level) . ' ' . $text . "\n\n";
         }, $html) ?? $html;
+    }
+
+    /**
+     * The text of a heading or a link on one line, with the words kept apart:
+     * `<strong>CLUSTER</strong><br />GRAPPOLO` is "CLUSTER GRAPPOLO", not "CLUSTERGRAPPOLO".
+     */
+    private static function flatten(string $html): string
+    {
+        $html = preg_replace('#<br\b[^>]*>#i', ' ', $html) ?? $html;
+        $html = preg_replace('#(</(?:strong|b|em|i|u|s|small|mark|span|a|code)\s*>)\s*(?=<(?:strong|b|em|i|u|s|small|mark|span|a|code)\b)#i', '$1 ', $html) ?? $html;
+
+        return trim((string) preg_replace('/\s+/u', ' ', strip_tags($html)));
     }
 
     private function blockquotes(string $html): string
@@ -107,7 +119,7 @@ final class Converter
     {
         return preg_replace_callback('#<a\b[^>]*href=["\']([^"\']*)["\'][^>]*>(.*?)</a>#si', function (array $m): string {
             $url = trim($m[1]);
-            $text = trim(strip_tags($m[2]));
+            $text = self::flatten($m[2]);
 
             if ($url === '' || str_starts_with($url, '#') || preg_match('/^javascript:/i', $url)) {
                 return $text;

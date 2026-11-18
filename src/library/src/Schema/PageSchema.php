@@ -12,6 +12,7 @@ defined('_JEXEC') or die;
 
 use Sernicola\Library\AiFriendly\Dto\ContentItem;
 use Sernicola\Library\AiFriendly\Schema\Page\EventDates;
+use Sernicola\Library\AiFriendly\Schema\Page\EventVenue;
 use Sernicola\Library\AiFriendly\Schema\Page\FaqExtractor;
 use Sernicola\Library\AiFriendly\Schema\Page\HtmlText;
 
@@ -427,42 +428,25 @@ final class PageSchema
             }
         }
 
-        $location = null;
+        $schoolPlace = null;
         foreach ($graph as $node) {
             if (is_array($node) && in_array('Place', (array) ($node['@type'] ?? []), true) && !empty($node['@id'])) {
-                $location = ['@id' => $node['@id']];
+                $schoolPlace = ['@id' => $node['@id']];
                 break;
             }
         }
-        if ($location === null && !empty($org['address'])) {
-            $location = ['@type' => 'Place', 'name' => $org['name'] ?? '', 'address' => $org['address']];
+        if ($schoolPlace === null && !empty($org['address'])) {
+            $schoolPlace = ['@type' => 'Place', 'name' => $org['name'] ?? '', 'address' => $org['address']];
         }
 
+        // The school is the venue unless the event says otherwise: custom
+        // fields of the article first, then the table of recurring venues.
         $fields = (array) ($stored['fields'] ?? []);
-        $place = self::field($fields, 'evento_luogo');
-        $address = self::field($fields, 'evento_indirizzo');
-        if ($place === '') {
-            $places = [];
-            foreach (self::lines((string) ($options['schema_event_places'] ?? '')) as $line) {
-                [$keyword, $name, $street, $postal, $city] = array_pad(array_map('trim', explode('|', $line, 5)), 5, '');
-                if ($keyword !== '' && $name !== '') $places[] = compact('keyword', 'name', 'street', 'postal', 'city');
-            }
-            foreach ([$item->title, mb_substr($plain, 0, 500)] as $haystack) {
-                foreach ($places as $candidate) {
-                    if (mb_stripos($haystack, $candidate['keyword']) === false) continue;
-                    $place = $candidate['name'];
-                    $address = implode('|', [$candidate['street'], $candidate['postal'], $candidate['city']]);
-                    break 2;
-                }
-            }
-        }
-        if ($place !== '') {
-            [$street, $postal, $city] = array_pad(array_map('trim', explode('|', $address, 3)), 3, '');
-            $location = ['@type' => 'Place', 'name' => $place];
-            if ($street !== '' || $postal !== '' || $city !== '') {
-                $location['address'] = self::clean(['@type' => 'PostalAddress', 'streetAddress' => $street, 'postalCode' => $postal, 'addressLocality' => $city]);
-            }
-        }
+        $venue = EventVenue::resolve($fields, EventVenue::rules((string) ($options['schema_event_places'] ?? '')), $item->title, $plain, $url);
+        $location = EventVenue::location($venue, $schoolPlace, $org);
+
+        // The end comes from the field, then from what the text states.
+        $end = EventDates::fromField((string) ($fields['evento_fine'] ?? ''), $dates['start'], (string) ($options['schema_timezone'] ?? 'Europe/Rome')) ?? $dates['end'];
 
         return [
             '@type' => $type,
@@ -471,9 +455,9 @@ final class PageSchema
             'description' => $description,
             'url' => $url,
             'startDate' => $dates['start'],
-            'endDate' => $dates['end'],
-            'eventStatus' => 'https://schema.org/EventScheduled',
-            'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
+            'endDate' => $end,
+            'eventStatus' => EventVenue::status($fields, $item->title),
+            'eventAttendanceMode' => EventVenue::attendanceMode($venue['mode']),
             'location' => $location,
             'organizer' => ['@id' => $orgId],
             'image' => $item->metadata['featured_image'] ?? null,

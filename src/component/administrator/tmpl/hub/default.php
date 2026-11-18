@@ -422,6 +422,23 @@ $alerts = array_merge($overview['errors'] ?? [], $overview['warnings'] ?? []);
                     </div>
                 </fieldset>
 
+                <fieldset class="aif-fieldset">
+                    <legend><?php echo $e(Text::_('COM_AIFRIENDLY_RULES_DESCRIPTIONS')); ?></legend>
+                    <div class="aif-form-grid">
+                        <div class="aif-field">
+                            <label for="aif-llms-description-source"><?php echo $e(Text::_('COM_AIFRIENDLY_LLMS_DESCRIPTION_SOURCE')); ?></label>
+                            <select id="aif-llms-description-source" name="options[llms_description_source]" aria-describedby="aif-llms-description-source-hint">
+                                <?php foreach (['auto' => 'COM_AIFRIENDLY_LLMS_DESCRIPTION_SOURCE_AUTO', 'meta' => 'COM_AIFRIENDLY_LLMS_DESCRIPTION_SOURCE_META', 'text' => 'COM_AIFRIENDLY_LLMS_DESCRIPTION_SOURCE_TEXT'] as $value => $label) : ?>
+                                    <option value="<?php echo $value; ?>"<?php echo ($o['llms_description_source'] ?? 'auto') === $value ? ' selected' : ''; ?>><?php echo $e(Text::_($label)); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="aif-hint" id="aif-llms-description-source-hint"><?php echo $e(Text::_('COM_AIFRIENDLY_LLMS_DESCRIPTION_SOURCE_HINT')); ?></small>
+                        </div>
+                        <?php echo $field(['key' => 'llms_description_length', 'label' => 'COM_AIFRIENDLY_LLMS_DESCRIPTION_LENGTH', 'type' => 'number', 'hint' => 'COM_AIFRIENDLY_LLMS_DESCRIPTION_LENGTH_HINT', 'attrs' => ' min="80" max="500" step="10"']); ?>
+                        <?php echo $field(['key' => 'llms_description_skip', 'label' => 'COM_AIFRIENDLY_LLMS_DESCRIPTION_SKIP', 'type' => 'textarea', 'rows' => 3, 'hint' => 'COM_AIFRIENDLY_LLMS_DESCRIPTION_SKIP_HINT']); ?>
+                    </div>
+                </fieldset>
+
                 <div class="aif-actionbar">
                     <button type="button" class="aif-primary" data-action="save"><?php echo $e(Text::_('COM_AIFRIENDLY_SAVE_RULES')); ?></button>
                     <span class="aif-dirty" data-dirty hidden><?php echo $e(Text::_('COM_AIFRIENDLY_UNSAVED')); ?></span>
